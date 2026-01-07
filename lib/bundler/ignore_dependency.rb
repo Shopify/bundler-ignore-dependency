@@ -13,6 +13,13 @@ module Bundler
         Bundler.definition&.ignored_dependencies || {}
       end
 
+      def completely_ignored_gem_names
+        @completely_ignored_gem_names ||= ignored_dependencies.filter_map do |name, type|
+          # Filter out Ruby/RubyGems internal names (they contain \0)
+          name if type == :complete && !name.include?("\0")
+        end.to_set
+      end
+
       def ignore_type_for(name)
         ignored_dependencies[name]
       end
@@ -74,3 +81,4 @@ require_relative "ignore_dependency/match_metadata_patch"
 require_relative "ignore_dependency/dsl_patch"
 require_relative "ignore_dependency/definition_patch"
 require_relative "ignore_dependency/resolver_patch"
+require_relative "ignore_dependency/lazy_specification_patch"
