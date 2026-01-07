@@ -3,6 +3,8 @@
 module Bundler
   module IgnoreRubyUpperBound
     LOWER_BOUND_OPERATORS = [">=", ">", "="].freeze
+    RUBY_DEPENDENCY_NAME = "Ruby\0"
+    RUBYGEMS_DEPENDENCY_NAME = "RubyGems\0"
 
     class << self
       def ignored_dependencies
@@ -19,6 +21,22 @@ module Bundler
 
       def upper_bound_ignored?(name)
         ignore_type_for(name) == :upper
+      end
+
+      def ruby_completely_ignored?
+        completely_ignored?(RUBY_DEPENDENCY_NAME)
+      end
+
+      def ruby_upper_bound_ignored?
+        upper_bound_ignored?(RUBY_DEPENDENCY_NAME)
+      end
+
+      def rubygems_completely_ignored?
+        completely_ignored?(RUBYGEMS_DEPENDENCY_NAME)
+      end
+
+      def rubygems_upper_bound_ignored?
+        upper_bound_ignored?(RUBYGEMS_DEPENDENCY_NAME)
       end
 
       def remove_upper_bounds(requirement)
