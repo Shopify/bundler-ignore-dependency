@@ -40,7 +40,7 @@ ignore_dependency! "gem_name", type: :upper   # Ignore only upper bounds on gem 
 
 ### Ignoring Ruby Version Upper Bounds
 
-If you're running Ruby 3.3 but a gem specifies `required_ruby_version = ">= 2.7", "< 3.0"`:
+You are upgrading to Ruby 4.0 but a gem specifies `required_ruby_version = ">= 3.2", "< 4.0"`:
 
 ```ruby
 # Gemfile
@@ -49,10 +49,10 @@ source "https://rubygems.org"
 plugin "bundler-ignore-dependency"
 ignore_dependency! :ruby, type: :upper
 
-gem "legacy_gem"  # Works even if it claims to only support Ruby < 3.0
+gem "legacy_gem"  # Works even if it claims to only support Ruby < 4.0
 ```
 
-This keeps the lower bound (`>= 2.7`) but ignores the upper bound (`< 3.0`).
+This keeps the lower bound (`>= 3.2`) but ignores the upper bound (`< 3.0`). The gem could still have compatibility problems with Ruby 4.0 when installed this way, but you can at least run your test suite to see if it works or not.
 
 ### Completely Ignoring Ruby Version
 
@@ -80,7 +80,7 @@ ignore_dependency! :rubygems, type: :upper
 gem "some_gem"
 ```
 
-### Ignoring Specific Gem Dependencies
+### Ignoring Gem Dependency Upper Bounds
 
 If a gem has an overly restrictive dependency on another gem:
 
@@ -93,6 +93,23 @@ ignore_dependency! "nokogiri", type: :upper
 
 gem "some_gem"  # Even if it requires nokogiri < 1.14, newer versions will be allowed
 ```
+
+### Using a Fork With a Different Gem Name
+
+If you have a fork of a gem published under a different name, you can ignore the original dependency and use your fork instead:
+
+```ruby
+# Gemfile
+source "https://rubygems.org"
+
+plugin "bundler-ignore-dependency"
+ignore_dependency! "redis"
+
+gem "redis-mycompany"  # Your fork, published under a different name
+gem "sidekiq"          # Depends on "redis", but we're using our fork instead
+```
+
+This removes `redis` from dependency resolution entirely, allowing `redis-mycompany` to satisfy the runtime requirements (assuming it provides the same `require` path and API).
 
 ### Multiple Ignore Rules
 
