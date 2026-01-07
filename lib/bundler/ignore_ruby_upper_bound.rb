@@ -1,0 +1,8 @@
+# frozen_string_literal: true
+
+require_relative "ignore_ruby_upper_bound/version"
+require_relative "ignore_ruby_upper_bound/helpers"
+require_relative "ignore_ruby_upper_bound/match_metadata_patch"
+require_relative "ignore_ruby_upper_bound/dsl_patch"
+require_relative "ignore_ruby_upper_bound/definition_patch"
+require_relative "ignore_ruby_upper_bound/resolver_patch"
