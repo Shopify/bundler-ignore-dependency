@@ -6,12 +6,16 @@ module Bundler
     # This ensures resolved specs don't have ignored gems in their dependencies
     module LazySpecificationPatch
       def from_spec(s)
-        lazy_spec = super
+        filter_ignored_dependencies(super)
+      end
 
-        # Filter out completely ignored dependencies
+      private
+
+      def filter_ignored_dependencies(lazy_spec)
         ignored_names = IgnoreDependency.completely_ignored_gem_names
+
         if ignored_names.any?
-          lazy_spec.dependencies = lazy_spec.dependencies.reject do |dep|
+          lazy_spec.dependencies.reject! do |dep|
             ignored_names.include?(dep.name)
           end
         end
