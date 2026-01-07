@@ -144,6 +144,10 @@ This plugin is useful when:
 - Consider reporting overly restrictive constraints to gem maintainers
 - This is primarily intended for development, testing, and working around temporary issues
 
+## Acknowledgments
+
+Thanks to [John Hawthorn](https://github.com/jhawthorn) for the original idea to ignore dependencies completely, not just upper bounds.
+
 ## License
 
 MIT
