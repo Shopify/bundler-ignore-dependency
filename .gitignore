@@ -1,3 +1,4 @@
 /.ruby-lsp/
 /spec/.rspec_status
 /Gemfile.lock
+test_app/

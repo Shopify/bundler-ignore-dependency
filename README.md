@@ -4,17 +4,19 @@ A Bundler plugin that allows you to ignore version constraints on Ruby, RubyGems
 
 ## Installation
 
-Add to your Gemfile:
-
-```ruby
-plugin "bundler-ignore-dependency"
-```
-
-Or install directly:
+Install the plugin:
 
 ```bash
 bundler plugin install bundler-ignore-dependency
 ```
+
+Then add this line at the top of your Gemfile to load the plugin:
+
+```ruby
+require File.join(Bundler::Plugin.index.load_paths("bundler-ignore-dependency")[0], "bundler/ignore_dependency") rescue nil
+```
+
+This is necessary because the plugin extends the Gemfile DSL, which must happen before Bundler parses the rest of your Gemfile.
 
 ## Usage
 

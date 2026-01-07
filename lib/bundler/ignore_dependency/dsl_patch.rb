@@ -16,13 +16,17 @@ module Bundler
         end
 
         key = normalize_dependency_name(name)
-        @ignored_dependencies[key] = type
+        ignored_dependencies[key] = type
       end
 
       def to_definition(lockfile, unlock)
         definition = super
-        definition.ignored_dependencies = @ignored_dependencies.dup
+        definition.ignored_dependencies = ignored_dependencies.dup
         definition
+      end
+
+      def ignored_dependencies
+        @ignored_dependencies ||= {}
       end
 
       private
