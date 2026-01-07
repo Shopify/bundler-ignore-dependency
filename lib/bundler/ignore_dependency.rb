@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
+require_relative "ignore_dependency/version"
+
 module Bundler
   module IgnoreDependency
-    VERSION = "0.1.0"
-
     LOWER_BOUND_OPERATORS = [">=", ">", "="].freeze
     RUBY_DEPENDENCY_NAME = "Ruby\0"
     RUBYGEMS_DEPENDENCY_NAME = "RubyGems\0"
