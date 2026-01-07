@@ -5,7 +5,11 @@ require "bundler/definition"
 module Bundler
   module IgnoreRubyUpperBound
     module DefinitionPatch
-      attr_accessor :ignore_ruby_upper_bound
+      attr_accessor :ignored_dependencies
+
+      def ignored_dependencies
+        @ignored_dependencies ||= {}
+      end
     end
   end
 

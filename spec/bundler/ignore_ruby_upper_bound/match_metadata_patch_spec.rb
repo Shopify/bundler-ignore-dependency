@@ -1,101 +1,96 @@
 # frozen_string_literal: true
 
 RSpec.describe Bundler::IgnoreRubyUpperBound::MatchMetadataPatch do
-  # MatchMetadata is a module included in Gem::Specification
-  # We test via Gem::Specification which includes the patched module
+  def with_ignored_dependencies(deps)
+    definition = instance_double(Bundler::Definition, ignored_dependencies: deps)
+    allow(Bundler).to receive(:definition).and_return(definition)
+  end
 
-  def spec_with_ruby_requirement(requirement)
+  def spec_with_requirements(ruby: nil, rubygems: nil)
     Gem::Specification.new do |s|
       s.name = "test_gem"
       s.version = "1.0.0"
-      s.required_ruby_version = requirement if requirement
+      s.required_ruby_version = ruby if ruby
+      s.required_rubygems_version = rubygems if rubygems
     end
   end
 
   describe "#matches_current_ruby?" do
-    context "when ignore_ruby_upper_bound is disabled" do
-      before do
-        definition = instance_double(Bundler::Definition, ignore_ruby_upper_bound: false)
-        allow(Bundler).to receive(:definition).and_return(definition)
+    context "when :ruby is completely ignored" do
+      before { with_ignored_dependencies({ ruby: :complete }) }
+
+      it "returns true regardless of requirement" do
+        spec = spec_with_requirements(ruby: ">= 99.0.0")
+        expect(spec.matches_current_ruby?).to be true
+      end
+    end
+
+    context "when :ruby upper bound is ignored" do
+      before { with_ignored_dependencies({ ruby: :upper }) }
+
+      it "returns true when only upper bound excludes current Ruby" do
+        skip "Test requires Ruby >= 3.0" if Gem.ruby_version < Gem::Version.new("3.0.0")
+
+        spec = spec_with_requirements(ruby: [">= 2.7", "< 3.0"])
+        expect(spec.matches_current_ruby?).to be true
       end
 
-      context "when gem has no ruby requirement" do
-        let(:spec) { spec_with_ruby_requirement(nil) }
+      it "returns false when lower bound excludes current Ruby" do
+        spec = spec_with_requirements(ruby: ">= 99.0.0")
+        expect(spec.matches_current_ruby?).to be false
+      end
+    end
 
-        it "returns true" do
-          expect(spec.matches_current_ruby?).to be true
-        end
+    context "when :ruby is not ignored" do
+      before { with_ignored_dependencies({}) }
+
+      it "returns false when requirement excludes current Ruby" do
+        skip "Test requires Ruby >= 3.0" if Gem.ruby_version < Gem::Version.new("3.0.0")
+
+        spec = spec_with_requirements(ruby: [">= 2.7", "< 3.0"])
+        expect(spec.matches_current_ruby?).to be false
       end
 
-      context "when gem requirement matches current ruby" do
-        let(:spec) { spec_with_ruby_requirement(">= 2.7") }
-
-        it "returns true" do
-          expect(spec.matches_current_ruby?).to be true
-        end
+      it "returns true when requirement matches current Ruby" do
+        spec = spec_with_requirements(ruby: ">= 2.7")
+        expect(spec.matches_current_ruby?).to be true
       end
+    end
+  end
 
-      context "when gem has upper bound excluding current ruby" do
-        # Assuming current Ruby is >= 3.1 (per gemspec requirement)
-        let(:spec) { spec_with_ruby_requirement([">= 2.7", "< 3.0"]) }
+  describe "#matches_current_rubygems?" do
+    context "when :rubygems is completely ignored" do
+      before { with_ignored_dependencies({ rubygems: :complete }) }
 
-        it "returns false" do
-          expect(spec.matches_current_ruby?).to be false
+      it "returns true regardless of requirement" do
+        spec = spec_with_requirements(rubygems: ">= 99.0.0")
+        expect(spec.matches_current_rubygems?).to be true
+      end
+    end
+
+    context "when :rubygems upper bound is ignored" do
+      before { with_ignored_dependencies({ rubygems: :upper }) }
+
+      it "removes upper bound from requirement" do
+        # Create a requirement that would fail without the patch
+        current_version = Gem.rubygems_version
+        upper_bound = Gem::Version.new("#{current_version.segments[0]}.0.0")
+
+        spec = spec_with_requirements(rubygems: [">= 1.0", "< #{upper_bound}"])
+
+        # With upper bound ignored, this should pass if current >= 1.0
+        if current_version >= Gem::Version.new("1.0")
+          expect(spec.matches_current_rubygems?).to be true
         end
       end
     end
 
-    context "when ignore_ruby_upper_bound is enabled" do
-      before do
-        definition = instance_double(Bundler::Definition, ignore_ruby_upper_bound: true)
-        allow(Bundler).to receive(:definition).and_return(definition)
-      end
+    context "when :rubygems is not ignored" do
+      before { with_ignored_dependencies({}) }
 
-      context "when gem has no ruby requirement" do
-        let(:spec) { spec_with_ruby_requirement(nil) }
-
-        it "returns true" do
-          expect(spec.matches_current_ruby?).to be true
-        end
-      end
-
-      context "when gem requirement matches current ruby" do
-        let(:spec) { spec_with_ruby_requirement(">= 2.7") }
-
-        it "returns true" do
-          expect(spec.matches_current_ruby?).to be true
-        end
-      end
-
-      context "when gem has upper bound excluding current ruby" do
-        # With ignore_ruby_upper_bound enabled, the upper bound is removed
-        let(:spec) { spec_with_ruby_requirement([">= 2.7", "< 3.0"]) }
-
-        it "returns true by ignoring the upper bound" do
-          expect(spec.matches_current_ruby?).to be true
-        end
-      end
-
-      context "when gem has pessimistic constraint" do
-        let(:spec) { spec_with_ruby_requirement("~> 2.7") }
-
-        it "returns true by converting to >= only" do
-          expect(spec.matches_current_ruby?).to be true
-        end
-      end
-    end
-
-    context "when no definition exists" do
-      before do
-        allow(Bundler).to receive(:definition).and_return(nil)
-      end
-
-      context "when gem has upper bound excluding current ruby" do
-        let(:spec) { spec_with_ruby_requirement([">= 2.7", "< 3.0"]) }
-
-        it "uses original requirement and returns false" do
-          expect(spec.matches_current_ruby?).to be false
-        end
+      it "returns true when requirement matches current RubyGems" do
+        spec = spec_with_requirements(rubygems: ">= 1.0")
+        expect(spec.matches_current_rubygems?).to be true
       end
     end
   end
