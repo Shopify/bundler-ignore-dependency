@@ -21,10 +21,7 @@ module Bundler
       end
 
       def filter_dependency(dep, ignored)
-        ignore_type = ignored[dep.name]
-        return dep unless ignore_type
-
-        case ignore_type
+        case ignored[dep.name]
         when :complete
           nil # Remove the dependency entirely
         when :upper
