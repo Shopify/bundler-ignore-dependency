@@ -2,7 +2,7 @@
 
 require "tmpdir"
 
-RSpec.describe Bundler::IgnoreRubyUpperBound::DslPatch do
+RSpec.describe Bundler::IgnoreDependency::DslPatch do
   let(:dsl) { Bundler::Dsl.new }
 
   describe "#ignore_dependency!" do

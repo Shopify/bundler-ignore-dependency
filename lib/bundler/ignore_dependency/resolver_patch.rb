@@ -3,7 +3,7 @@
 require "bundler/resolver"
 
 module Bundler
-  module IgnoreRubyUpperBound
+  module IgnoreDependency
     module ResolverPatch
       private
 
@@ -12,7 +12,7 @@ module Bundler
       end
 
       def filter_ignored_dependencies(deps)
-        ignored = IgnoreRubyUpperBound.ignored_dependencies
+        ignored = IgnoreDependency.ignored_dependencies
         return deps if ignored.empty?
 
         deps.filter_map do |dep|
@@ -35,11 +35,11 @@ module Bundler
       end
 
       def apply_upper_bound_filter(dep)
-        filtered = IgnoreRubyUpperBound.remove_upper_bounds(dep.requirement)
+        filtered = IgnoreDependency.remove_upper_bounds(dep.requirement)
         Gem::Dependency.new(dep.name, filtered)
       end
     end
   end
 
-  Resolver.prepend(IgnoreRubyUpperBound::ResolverPatch)
+  Resolver.prepend(IgnoreDependency::ResolverPatch)
 end

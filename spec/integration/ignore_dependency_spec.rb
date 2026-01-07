@@ -130,7 +130,7 @@ RSpec.describe "ignore_dependency! integration" do
   describe "resolver filtering integration" do
     let(:resolver_class) do
       Class.new do
-        include Bundler::IgnoreRubyUpperBound::ResolverPatch
+        include Bundler::IgnoreDependency::ResolverPatch
         public :filter_ignored_dependencies
       end
     end

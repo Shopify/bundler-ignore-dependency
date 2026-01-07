@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "bundler"
-require "bundler/ignore_ruby_upper_bound"
+require "bundler/ignore_dependency"
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|

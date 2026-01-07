@@ -3,7 +3,7 @@
 require "bundler/dsl"
 
 module Bundler
-  module IgnoreRubyUpperBound
+  module IgnoreDependency
     module DslPatch
       def initialize
         super
@@ -30,9 +30,9 @@ module Bundler
       def normalize_dependency_name(name)
         case name
         when :ruby
-          IgnoreRubyUpperBound::RUBY_DEPENDENCY_NAME
+          IgnoreDependency::RUBY_DEPENDENCY_NAME
         when :rubygems
-          IgnoreRubyUpperBound::RUBYGEMS_DEPENDENCY_NAME
+          IgnoreDependency::RUBYGEMS_DEPENDENCY_NAME
         when String
           name
         else
@@ -42,5 +42,5 @@ module Bundler
     end
   end
 
-  Dsl.prepend(IgnoreRubyUpperBound::DslPatch)
+  Dsl.prepend(IgnoreDependency::DslPatch)
 end

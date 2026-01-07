@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Bundler::IgnoreRubyUpperBound::MatchMetadataPatch do
+RSpec.describe Bundler::IgnoreDependency::MatchMetadataPatch do
   def with_ignored_dependencies(deps)
     definition = instance_double(Bundler::Definition, ignored_dependencies: deps)
     allow(Bundler).to receive(:definition).and_return(definition)

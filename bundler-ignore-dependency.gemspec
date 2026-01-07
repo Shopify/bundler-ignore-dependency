@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 Gem::Specification.new do |s|
-  s.name        = "bundler-ignore-ruby-upper-bound"
+  s.name        = "bundler-ignore-dependency"
   s.version     = "0.1.0"
-  s.summary     = "Bundler plugin to ignore Ruby version upper bounds"
-  s.description = "A Bundler plugin that adds an ignore_ruby_upper_bound DSL method to allow installing gems that have Ruby version upper bounds that exclude the current Ruby version."
+  s.summary     = "Bundler plugin to ignore dependency version constraints"
+  s.description = "A Bundler plugin that adds an ignore_dependency! DSL method to allow ignoring version constraints on Ruby, RubyGems, or gem dependencies."
   s.authors     = ["Shopify"]
   s.homepage    = "https://github.com/Shopify/rubygems"
   s.license     = "MIT"

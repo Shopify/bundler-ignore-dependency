@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Bundler::IgnoreRubyUpperBound::DefinitionPatch do
+RSpec.describe Bundler::IgnoreDependency::DefinitionPatch do
   let(:definition) { Bundler::Definition.new(nil, [], Bundler::SourceList.new, {}) }
 
   describe "#ignored_dependencies" do

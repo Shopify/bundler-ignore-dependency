@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 module Bundler
-  module IgnoreRubyUpperBound
+  module IgnoreDependency
+    VERSION = "0.1.0"
+
     LOWER_BOUND_OPERATORS = [">=", ">", "="].freeze
     RUBY_DEPENDENCY_NAME = "Ruby\0"
     RUBYGEMS_DEPENDENCY_NAME = "RubyGems\0"
@@ -67,3 +69,8 @@ module Bundler
     end
   end
 end
+
+require_relative "ignore_dependency/match_metadata_patch"
+require_relative "ignore_dependency/dsl_patch"
+require_relative "ignore_dependency/definition_patch"
+require_relative "ignore_dependency/resolver_patch"

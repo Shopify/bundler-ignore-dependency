@@ -3,7 +3,7 @@
 require "bundler/definition"
 
 module Bundler
-  module IgnoreRubyUpperBound
+  module IgnoreDependency
     module DefinitionPatch
       attr_accessor :ignored_dependencies
 
@@ -13,5 +13,5 @@ module Bundler
     end
   end
 
-  Definition.prepend(IgnoreRubyUpperBound::DefinitionPatch)
+  Definition.prepend(IgnoreDependency::DefinitionPatch)
 end

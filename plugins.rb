@@ -1,3 +1,3 @@
 # frozen_string_literal: true
 
-require_relative "lib/bundler/ignore_ruby_upper_bound"
+require_relative "lib/bundler/ignore_dependency"
