@@ -5,12 +5,6 @@ require "bundler/resolver"
 module Bundler
   module IgnoreRubyUpperBound
     module ResolverPatch
-      # Maps internal dependency names to our ignore rule names
-      METADATA_DEPENDENCY_MAP = {
-        "Ruby\0" => :ruby,
-        "RubyGems\0" => :rubygems
-      }.freeze
-
       private
 
       def to_dependency_hash(dependencies, packages)
@@ -27,9 +21,7 @@ module Bundler
       end
 
       def filter_dependency(dep, ignored)
-        ignore_name = dependency_ignore_name(dep)
-        ignore_type = ignored[ignore_name]
-
+        ignore_type = ignored[dep.name]
         return dep unless ignore_type
 
         case ignore_type
@@ -40,11 +32,6 @@ module Bundler
         else
           dep
         end
-      end
-
-      def dependency_ignore_name(dep)
-        # Check if it's a metadata dependency (Ruby, RubyGems)
-        METADATA_DEPENDENCY_MAP[dep.name] || dep.name
       end
 
       def apply_upper_bound_filter(dep)

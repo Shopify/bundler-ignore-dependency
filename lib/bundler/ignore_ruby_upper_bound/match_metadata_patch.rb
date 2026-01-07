@@ -6,9 +6,9 @@ module Bundler
   module IgnoreRubyUpperBound
     module MatchMetadataPatch
       def matches_current_ruby?
-        return true if IgnoreRubyUpperBound.completely_ignored?(:ruby)
+        return true if IgnoreRubyUpperBound.completely_ignored?("Ruby\0")
 
-        requirement = if IgnoreRubyUpperBound.upper_bound_ignored?(:ruby)
+        requirement = if IgnoreRubyUpperBound.upper_bound_ignored?("Ruby\0")
           IgnoreRubyUpperBound.remove_upper_bounds(@required_ruby_version)
         else
           @required_ruby_version
@@ -18,9 +18,9 @@ module Bundler
       end
 
       def matches_current_rubygems?
-        return true if IgnoreRubyUpperBound.completely_ignored?(:rubygems)
+        return true if IgnoreRubyUpperBound.completely_ignored?("RubyGems\0")
 
-        requirement = if IgnoreRubyUpperBound.upper_bound_ignored?(:rubygems)
+        requirement = if IgnoreRubyUpperBound.upper_bound_ignored?("RubyGems\0")
           IgnoreRubyUpperBound.remove_upper_bounds(@required_rubygems_version)
         else
           @required_rubygems_version

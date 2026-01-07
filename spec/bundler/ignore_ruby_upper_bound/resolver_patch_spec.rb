@@ -39,8 +39,8 @@ RSpec.describe Bundler::IgnoreRubyUpperBound::ResolverPatch do
       end
     end
 
-    context "when :ruby is completely ignored" do
-      before { with_ignored_dependencies({ ruby: :complete }) }
+    context "when Ruby is completely ignored" do
+      before { with_ignored_dependencies({ "Ruby\0" => :complete }) }
 
       it "removes Ruby dependency entirely" do
         deps = [
@@ -54,8 +54,8 @@ RSpec.describe Bundler::IgnoreRubyUpperBound::ResolverPatch do
       end
     end
 
-    context "when :ruby upper bound is ignored" do
-      before { with_ignored_dependencies({ ruby: :upper }) }
+    context "when Ruby upper bound is ignored" do
+      before { with_ignored_dependencies({ "Ruby\0" => :upper }) }
 
       it "removes upper bounds from Ruby dependency" do
         deps = [ruby_dependency([">= 2.7", "< 3.3"])]
@@ -67,8 +67,8 @@ RSpec.describe Bundler::IgnoreRubyUpperBound::ResolverPatch do
       end
     end
 
-    context "when :rubygems is completely ignored" do
-      before { with_ignored_dependencies({ rubygems: :complete }) }
+    context "when RubyGems is completely ignored" do
+      before { with_ignored_dependencies({ "RubyGems\0" => :complete }) }
 
       it "removes RubyGems dependency entirely" do
         deps = [
@@ -113,8 +113,8 @@ RSpec.describe Bundler::IgnoreRubyUpperBound::ResolverPatch do
     context "with multiple ignored dependencies" do
       before do
         with_ignored_dependencies({
-          ruby: :upper,
-          rubygems: :complete,
+          "Ruby\0" => :upper,
+          "RubyGems\0" => :complete,
           "nokogiri" => :complete
         })
       end

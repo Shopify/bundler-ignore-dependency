@@ -10,34 +10,34 @@ RSpec.describe "ignore_dependency! integration" do
   end
 
   describe "Gemfile DSL integration" do
-    it "can ignore :ruby completely" do
+    it "can ignore :ruby completely with normalized key" do
       dsl = Bundler::Dsl.new
       dsl.ignore_dependency!(:ruby)
 
-      expect(dsl.instance_variable_get(:@ignored_dependencies)).to eq({ ruby: :complete })
+      expect(dsl.instance_variable_get(:@ignored_dependencies)).to eq({ "Ruby\0" => :complete })
     end
 
-    it "can ignore :ruby upper bounds only" do
+    it "can ignore :ruby upper bounds only with normalized key" do
       dsl = Bundler::Dsl.new
       dsl.ignore_dependency!(:ruby, type: :upper)
 
-      expect(dsl.instance_variable_get(:@ignored_dependencies)).to eq({ ruby: :upper })
+      expect(dsl.instance_variable_get(:@ignored_dependencies)).to eq({ "Ruby\0" => :upper })
     end
 
-    it "can ignore multiple dependencies" do
+    it "can ignore multiple dependencies with normalized keys" do
       dsl = Bundler::Dsl.new
       dsl.ignore_dependency!(:ruby, type: :upper)
       dsl.ignore_dependency!(:rubygems)
       dsl.ignore_dependency!("nokogiri")
 
       expect(dsl.instance_variable_get(:@ignored_dependencies)).to eq({
-        ruby: :upper,
-        rubygems: :complete,
+        "Ruby\0" => :upper,
+        "RubyGems\0" => :complete,
         "nokogiri" => :complete
       })
     end
 
-    it "propagates settings through to Definition" do
+    it "propagates settings through to Definition with normalized keys" do
       Dir.mktmpdir do |dir|
         gemfile_path = File.join(dir, "Gemfile")
         lockfile_path = File.join(dir, "Gemfile.lock")
@@ -51,7 +51,7 @@ RSpec.describe "ignore_dependency! integration" do
 
         definition = Bundler::Definition.build(gemfile_path, lockfile_path, {})
 
-        expect(definition.ignored_dependencies).to eq({ ruby: :upper })
+        expect(definition.ignored_dependencies).to eq({ "Ruby\0" => :upper })
       end
     end
   end
@@ -70,18 +70,18 @@ RSpec.describe "ignore_dependency! integration" do
         skip "Test requires Ruby >= 3.0" if Gem.ruby_version < Gem::Version.new("3.0.0")
       end
 
-      it "rejects gem when :ruby is not ignored" do
+      it "rejects gem when Ruby is not ignored" do
         with_ignored_dependencies({})
         expect(spec_with_upper_bound.matches_current_ruby?).to be false
       end
 
-      it "accepts gem when :ruby is completely ignored" do
-        with_ignored_dependencies({ ruby: :complete })
+      it "accepts gem when Ruby is completely ignored" do
+        with_ignored_dependencies({ "Ruby\0" => :complete })
         expect(spec_with_upper_bound.matches_current_ruby?).to be true
       end
 
-      it "accepts gem when :ruby upper bound is ignored" do
-        with_ignored_dependencies({ ruby: :upper })
+      it "accepts gem when Ruby upper bound is ignored" do
+        with_ignored_dependencies({ "Ruby\0" => :upper })
         expect(spec_with_upper_bound.matches_current_ruby?).to be true
       end
     end
@@ -102,7 +102,7 @@ RSpec.describe "ignore_dependency! integration" do
       expect(legacy_spec.matches_current_ruby?).to be false
 
       # With upper bound ignored (equivalent to old ignore_ruby_upper_bound!)
-      with_ignored_dependencies({ ruby: :upper })
+      with_ignored_dependencies({ "Ruby\0" => :upper })
       expect(legacy_spec.matches_current_ruby?).to be true
     end
 
@@ -118,11 +118,11 @@ RSpec.describe "ignore_dependency! integration" do
       expect(future_gem.matches_current_ruby?).to be false
 
       # With :upper only - still fails due to lower bound
-      with_ignored_dependencies({ ruby: :upper })
+      with_ignored_dependencies({ "Ruby\0" => :upper })
       expect(future_gem.matches_current_ruby?).to be false
 
       # With :complete - passes regardless
-      with_ignored_dependencies({ ruby: :complete })
+      with_ignored_dependencies({ "Ruby\0" => :complete })
       expect(future_gem.matches_current_ruby?).to be true
     end
   end
@@ -139,7 +139,7 @@ RSpec.describe "ignore_dependency! integration" do
 
     it "filters dependencies according to ignore rules" do
       with_ignored_dependencies({
-        ruby: :upper,
+        "Ruby\0" => :upper,
         "nokogiri" => :complete
       })
 

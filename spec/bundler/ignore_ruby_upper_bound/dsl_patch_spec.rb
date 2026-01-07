@@ -11,26 +11,26 @@ RSpec.describe Bundler::IgnoreRubyUpperBound::DslPatch do
     end
 
     context "with :ruby" do
-      it "stores :complete type by default" do
+      it "stores :complete type by default with normalized key" do
         dsl.ignore_dependency!(:ruby)
-        expect(dsl.instance_variable_get(:@ignored_dependencies)).to eq({ ruby: :complete })
+        expect(dsl.instance_variable_get(:@ignored_dependencies)).to eq({ "Ruby\0" => :complete })
       end
 
-      it "stores :upper type when specified" do
+      it "stores :upper type when specified with normalized key" do
         dsl.ignore_dependency!(:ruby, type: :upper)
-        expect(dsl.instance_variable_get(:@ignored_dependencies)).to eq({ ruby: :upper })
+        expect(dsl.instance_variable_get(:@ignored_dependencies)).to eq({ "Ruby\0" => :upper })
       end
     end
 
     context "with :rubygems" do
-      it "stores :complete type by default" do
+      it "stores :complete type by default with normalized key" do
         dsl.ignore_dependency!(:rubygems)
-        expect(dsl.instance_variable_get(:@ignored_dependencies)).to eq({ rubygems: :complete })
+        expect(dsl.instance_variable_get(:@ignored_dependencies)).to eq({ "RubyGems\0" => :complete })
       end
 
-      it "stores :upper type when specified" do
+      it "stores :upper type when specified with normalized key" do
         dsl.ignore_dependency!(:rubygems, type: :upper)
-        expect(dsl.instance_variable_get(:@ignored_dependencies)).to eq({ rubygems: :upper })
+        expect(dsl.instance_variable_get(:@ignored_dependencies)).to eq({ "RubyGems\0" => :upper })
       end
     end
 
@@ -47,14 +47,14 @@ RSpec.describe Bundler::IgnoreRubyUpperBound::DslPatch do
     end
 
     context "with multiple dependencies" do
-      it "stores all ignored dependencies" do
+      it "stores all ignored dependencies with normalized keys" do
         dsl.ignore_dependency!(:ruby, type: :upper)
         dsl.ignore_dependency!(:rubygems)
         dsl.ignore_dependency!("nokogiri")
 
         expect(dsl.instance_variable_get(:@ignored_dependencies)).to eq({
-          ruby: :upper,
-          rubygems: :complete,
+          "Ruby\0" => :upper,
+          "RubyGems\0" => :complete,
           "nokogiri" => :complete
         })
       end
@@ -80,7 +80,7 @@ RSpec.describe Bundler::IgnoreRubyUpperBound::DslPatch do
       allow(Bundler::SharedHelpers).to receive(:pwd).and_return(Dir.tmpdir)
     end
 
-    it "passes ignored dependencies to the definition" do
+    it "passes ignored dependencies to the definition with normalized keys" do
       dsl.source("https://rubygems.org")
       dsl.ignore_dependency!(:ruby, type: :upper)
       dsl.ignore_dependency!("nokogiri")
@@ -88,7 +88,7 @@ RSpec.describe Bundler::IgnoreRubyUpperBound::DslPatch do
       definition = dsl.to_definition(lockfile, {})
 
       expect(definition.ignored_dependencies).to eq({
-        ruby: :upper,
+        "Ruby\0" => :upper,
         "nokogiri" => :complete
       })
     end

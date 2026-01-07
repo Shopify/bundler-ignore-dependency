@@ -16,8 +16,8 @@ RSpec.describe Bundler::IgnoreRubyUpperBound::MatchMetadataPatch do
   end
 
   describe "#matches_current_ruby?" do
-    context "when :ruby is completely ignored" do
-      before { with_ignored_dependencies({ ruby: :complete }) }
+    context "when Ruby is completely ignored" do
+      before { with_ignored_dependencies({ "Ruby\0" => :complete }) }
 
       it "returns true regardless of requirement" do
         spec = spec_with_requirements(ruby: ">= 99.0.0")
@@ -25,8 +25,8 @@ RSpec.describe Bundler::IgnoreRubyUpperBound::MatchMetadataPatch do
       end
     end
 
-    context "when :ruby upper bound is ignored" do
-      before { with_ignored_dependencies({ ruby: :upper }) }
+    context "when Ruby upper bound is ignored" do
+      before { with_ignored_dependencies({ "Ruby\0" => :upper }) }
 
       it "returns true when only upper bound excludes current Ruby" do
         skip "Test requires Ruby >= 3.0" if Gem.ruby_version < Gem::Version.new("3.0.0")
@@ -41,7 +41,7 @@ RSpec.describe Bundler::IgnoreRubyUpperBound::MatchMetadataPatch do
       end
     end
 
-    context "when :ruby is not ignored" do
+    context "when Ruby is not ignored" do
       before { with_ignored_dependencies({}) }
 
       it "returns false when requirement excludes current Ruby" do
@@ -59,8 +59,8 @@ RSpec.describe Bundler::IgnoreRubyUpperBound::MatchMetadataPatch do
   end
 
   describe "#matches_current_rubygems?" do
-    context "when :rubygems is completely ignored" do
-      before { with_ignored_dependencies({ rubygems: :complete }) }
+    context "when RubyGems is completely ignored" do
+      before { with_ignored_dependencies({ "RubyGems\0" => :complete }) }
 
       it "returns true regardless of requirement" do
         spec = spec_with_requirements(rubygems: ">= 99.0.0")
@@ -68,8 +68,8 @@ RSpec.describe Bundler::IgnoreRubyUpperBound::MatchMetadataPatch do
       end
     end
 
-    context "when :rubygems upper bound is ignored" do
-      before { with_ignored_dependencies({ rubygems: :upper }) }
+    context "when RubyGems upper bound is ignored" do
+      before { with_ignored_dependencies({ "RubyGems\0" => :upper }) }
 
       it "removes upper bound from requirement" do
         # Create a requirement that would fail without the patch
@@ -85,7 +85,7 @@ RSpec.describe Bundler::IgnoreRubyUpperBound::MatchMetadataPatch do
       end
     end
 
-    context "when :rubygems is not ignored" do
+    context "when RubyGems is not ignored" do
       before { with_ignored_dependencies({}) }
 
       it "returns true when requirement matches current RubyGems" do

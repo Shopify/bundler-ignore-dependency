@@ -5,6 +5,11 @@ require "bundler/dsl"
 module Bundler
   module IgnoreRubyUpperBound
     module DslPatch
+      DEPENDENCY_NAME_MAP = {
+        ruby: "Ruby\0",
+        rubygems: "RubyGems\0"
+      }.freeze
+
       def initialize
         super
         @ignored_dependencies = {}
@@ -30,7 +35,7 @@ module Bundler
       def normalize_dependency_name(name)
         case name
         when :ruby, :rubygems
-          name
+          DEPENDENCY_NAME_MAP[name]
         when String
           name
         else
