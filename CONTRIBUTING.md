@@ -15,7 +15,7 @@ We love receiving pull requests from everyone! Here are some ways you can contri
 2. Create a feature branch (`git checkout -b my-new-feature`)
 3. Make your changes
 4. Add or update tests as needed
-5. Ensure all tests pass (`bin/minitest test/**/*_test.rb`)
+5. Ensure all tests pass (`bin/minitest`)
 6. Commit your changes (`git commit -am 'Add new feature'`)
 7. Push to the branch (`git push origin my-new-feature`)
 8. Create a Pull Request
@@ -31,20 +31,20 @@ cd bundler-ignore-dependency
 bundle install
 
 # Run tests
-bin/minitest test/**/*_test.rb
+bin/minitest
 ```
 
 ## Running Tests
 
 ```bash
 # Run all tests
-bin/minitest test/**/*_test.rb
+bin/minitest
 
 # Run unit tests only
-bin/minitest test/unit/*_test.rb
+bin/minitest test/unit
 
 # Run CLI tests only
-bin/minitest test/cli/*_test.rb
+bin/minitest test/cli
 
 # Run a specific test file
 bin/minitest test/cli/ignore_dependency_test.rb
