@@ -8,7 +8,7 @@ class TestDefinitionPatch < BundlerTest
   end
 
   def test_ignored_dependencies_defaults_to_empty_hash
-    assert_equal({}, @definition.ignored_dependencies)
+    assert_empty(@definition.ignored_dependencies)
   end
 
   def test_ignored_dependencies_can_be_set_to_hash

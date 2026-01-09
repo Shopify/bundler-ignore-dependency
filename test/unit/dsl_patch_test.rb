@@ -9,7 +9,7 @@ class TestDslPatch < BundlerTest
   end
 
   def test_ignore_dependency_defaults_to_empty_hash
-    assert_equal({}, @dsl.ignored_dependencies)
+    assert_empty(@dsl.ignored_dependencies)
   end
 
   def test_ignore_dependency_with_ruby_stores_complete_type_by_default
@@ -114,7 +114,7 @@ class TestDslPatch < BundlerTest
       @dsl.source("https://rubygems.org")
       definition = @dsl.to_definition(lockfile, {})
 
-      assert_equal({}, definition.ignored_dependencies)
+      assert_empty(definition.ignored_dependencies)
     ensure
       if original_method
         Bundler::SharedHelpers.define_singleton_method(:pwd, &original_method)

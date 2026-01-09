@@ -3,3 +3,6 @@ inherit_gem:
 
 AllCops:
   SuggestExtensions: false
+
+plugins:
+  - rubocop-minitest

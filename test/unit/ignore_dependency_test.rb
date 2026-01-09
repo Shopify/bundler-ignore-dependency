@@ -5,7 +5,7 @@ require_relative "test_helper"
 class TestBundlerIgnoreDependency < BundlerTest
   def test_ignored_dependencies_returns_empty_hash_when_no_definition
     with_ignored_dependencies(nil) do
-      assert_equal({}, Bundler::IgnoreDependency.ignored_dependencies)
+      assert_empty(Bundler::IgnoreDependency.ignored_dependencies)
     end
   end
 
