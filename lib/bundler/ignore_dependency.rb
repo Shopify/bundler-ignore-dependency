@@ -73,6 +73,13 @@ module Bundler
 
         requirement
       end
+
+      def filter_ignored_gem_dependencies(dependencies)
+        ignored_names = completely_ignored_gem_names
+        return dependencies if ignored_names.empty?
+
+        dependencies.reject { |dep| ignored_names.include?(dep.name) }
+      end
     end
   end
 end

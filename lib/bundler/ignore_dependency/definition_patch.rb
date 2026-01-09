@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
-require "bundler/definition"
+require 'bundler/definition'
 
 module Bundler
   module IgnoreDependency
     module DefinitionPatch
-      attr_accessor :ignored_dependencies
-
       def ignored_dependencies
         @ignored_dependencies ||= {}
       end
+
+      attr_writer :ignored_dependencies
     end
   end
 

@@ -13,7 +13,7 @@ module Bundler
 
         return deps if ignored_names.empty?
 
-        deps.reject { |dep, _platform| ignored_names.include?(dep.name) }
+        deps.reject { |dep, _| ignored_names.include?(dep.name) }
       end
     end
   end
