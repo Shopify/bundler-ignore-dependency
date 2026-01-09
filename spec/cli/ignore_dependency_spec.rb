@@ -2,7 +2,9 @@
 
 require_relative 'spec_helper'
 
-RSpec.describe 'bundler-ignore-dependency plugin (CLI)' do
+class TestBundlerIgnoreDependencyPlugin < Minitest::Test
+  include CLIHelpers
+
   # Helper to create a simple gem directory
   # required_ruby_version can be a single constraint string (e.g., "< 2.0") or an array (e.g., [">= 2.5", "< 3.0"])
   def create_test_gem(dir, name:, version: '1.0.0', dependencies: [], required_ruby_version: nil,
@@ -46,320 +48,272 @@ RSpec.describe 'bundler-ignore-dependency plugin (CLI)' do
     gem_dir
   end
 
-  describe 'plugin installation' do
-    it 'plugin is installed successfully and bundle install works' do
-      with_tmp_dir do |dir|
-        create_test_gem(dir, name: 'simple_gem')
+  def test_plugin_installed_successfully_and_bundle_install_works
+    with_tmp_dir do |dir|
+      create_test_gem(dir, name: 'simple_gem')
 
-        write_gemfile(dir, <<~G)
-          source "https://rubygems.org"
-          gem "simple_gem", path: "gems/simple_gem"
-        G
+      write_gemfile(dir, <<~G)
+        source "https://rubygems.org"
+        gem "simple_gem", path: "gems/simple_gem"
+      G
 
-        # Use run_bundle_install for two-pass plugin activation
-        result = run_bundle_install(dir)
+      result = run_bundle_install(dir)
 
-        expect(result.success?).to be(true),
-                                   "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}"
-        expect(lockfile_includes_gem?(dir, 'simple_gem')).to be true
-      end
-    end
-
-    it 'plugin is available for subsequent bundle commands' do
-      with_tmp_dir do |dir|
-        create_test_gem(dir, name: 'simple_gem')
-
-        write_gemfile(dir, <<~G)
-          source "https://rubygems.org"
-          gem "simple_gem", path: "gems/simple_gem"
-        G
-
-        result1 = run_bundle(dir, 'install')
-        expect(result1.success?).to be true
-
-        result2 = run_bundle(dir, 'install')
-        expect(result2.success?).to be true
-      end
+      assert(result.success?,
+             "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}")
+      assert(lockfile_includes_gem?(dir, 'simple_gem'))
     end
   end
 
-  describe 'ignoring Ruby version constraints' do
-    context 'with complete ignore' do
-      it 'allows installation of gems with incompatible Ruby version requirements' do
-        with_tmp_dir do |dir|
-          # Create a gem that requires an impossible Ruby version
-          create_test_gem(dir, name: 'legacy_gem', required_ruby_version: '< 2.0')
+  def test_plugin_available_for_subsequent_bundle_commands
+    with_tmp_dir do |dir|
+      create_test_gem(dir, name: 'simple_gem')
 
-          write_gemfile(dir, <<~G)
-            source "https://rubygems.org"
-            ignore_dependency! :ruby
-            gem "legacy_gem", path: "gems/legacy_gem"
-          G
+      write_gemfile(dir, <<~G)
+        source "https://rubygems.org"
+        gem "simple_gem", path: "gems/simple_gem"
+      G
 
-          # Use run_bundle_install for two-pass plugin activation
-          result = run_bundle_install(dir)
+      result1 = run_bundle(dir, 'install')
+      assert(result1.success?)
 
-          expect(result.success?).to be(true),
-                                     "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}"
-          expect(lockfile_includes_gem?(dir, 'legacy_gem')).to be true
-        end
-      end
-    end
-
-    context 'with upper bound ignore' do
-      it 'allows installation of gems with upper bound Ruby version constraints' do
-        # This test creates a gem that requires Ruby < 3.0
-        # On Ruby >= 3.0, this would normally fail, but with upper bound ignore it should work
-        skip 'Test requires Ruby >= 3.0' if RUBY_VERSION < '3.0'
-
-        with_tmp_dir do |dir|
-          create_test_gem(dir, name: 'upper_bound_ruby_gem', required_ruby_version: ['>= 2.5', '< 3.0'])
-
-          write_gemfile(dir, <<~G)
-            source "https://rubygems.org"
-            ignore_dependency! :ruby, type: :upper
-            gem "upper_bound_ruby_gem", path: "gems/upper_bound_ruby_gem"
-          G
-
-          # Use run_bundle_install for two-pass plugin activation
-          result = run_bundle_install(dir)
-
-          expect(result.success?).to be(true),
-                                     "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}"
-          expect(lockfile_includes_gem?(dir, 'upper_bound_ruby_gem')).to be true
-        end
-      end
-
-      it 'still enforces lower bound when only upper bound is ignored' do
-        # Create a gem requiring a future Ruby version - lower bound should still fail
-        with_tmp_dir do |dir|
-          create_test_gem(dir, name: 'future_gem', required_ruby_version: ['>= 99.0', '< 100.0'])
-
-          write_gemfile(dir, <<~G)
-            source "https://rubygems.org"
-            ignore_dependency! :ruby, type: :upper
-            gem "future_gem", path: "gems/future_gem"
-          G
-
-          # Use run_bundle_install for two-pass plugin activation
-          result = run_bundle_install(dir)
-
-          # Should fail because lower bound (>= 99.0) is not met
-          expect(result.success?).to be false
-        end
-      end
+      result2 = run_bundle(dir, 'install')
+      assert(result2.success?)
     end
   end
 
-  describe 'ignoring gem dependency constraints' do
-    context 'with complete ignore' do
-      it 'installs gems without their ignored dependencies' do
-        with_tmp_dir do |dir|
-          # Create a main gem that depends on json
-          create_test_gem(dir, name: 'main_gem', dependencies: [{ name: 'json', version: '>= 2.0' }])
+  def test_allows_installation_of_gems_with_incompatible_ruby_version
+    with_tmp_dir do |dir|
+      create_test_gem(dir, name: 'legacy_gem', required_ruby_version: '< 2.0')
 
-          write_gemfile(dir, <<~G)
-            source "https://rubygems.org"
-            ignore_dependency! "json"
-            gem "main_gem", path: "gems/main_gem"
-          G
+      write_gemfile(dir, <<~G)
+        source "https://rubygems.org"
+        ignore_dependency! :ruby
+        gem "legacy_gem", path: "gems/legacy_gem"
+      G
 
-          # Use run_bundle_install for two-pass plugin activation
-          result = run_bundle_install(dir)
+      result = run_bundle_install(dir)
 
-          # Should succeed because json is ignored, so bundler won't try to fetch it
-          # even though main_gem depends on it
-          expect(result.success?).to be(true),
-                                     "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}"
-
-          lockfile = read_lockfile(dir)
-          expect(lockfile).to include('main_gem')
-          # json should not be in the lockfile because it was ignored
-          expect(lockfile).not_to include('json (')
-        end
-      end
-
-      it 'can ignore multiple gem dependencies' do
-        with_tmp_dir do |dir|
-          # Create a main gem that depends on multiple dependencies
-          create_test_gem(dir, name: 'main_gem', dependencies: [
-                            { name: 'json', version: '>= 2.0' },
-                            { name: 'fileutils', version: '>= 1.0' }
-                          ])
-
-          write_gemfile(dir, <<~G)
-            source "https://rubygems.org"
-            ignore_dependency! "json"
-            ignore_dependency! "fileutils"
-            gem "main_gem", path: "gems/main_gem"
-          G
-
-          # Use run_bundle_install for two-pass plugin activation
-          result = run_bundle_install(dir)
-
-          expect(result.success?).to be(true),
-                                     "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}"
-
-          lockfile = read_lockfile(dir)
-          expect(lockfile).to include('main_gem')
-          expect(lockfile).not_to include('json (')
-          expect(lockfile).not_to include('fileutils (')
-        end
-      end
-    end
-
-    context 'with upper bound ignore' do
-      it 'allows resolving gems with conflicting upper bound constraints' do
-        with_tmp_dir do |dir|
-          # Create two versions of a dependency
-          dep_v1_dir = File.join(dir, 'gems', 'shared_dep_v1')
-          FileUtils.mkdir_p(File.join(dep_v1_dir, 'lib'))
-          File.write(File.join(dep_v1_dir, 'lib', 'shared_dep.rb'), "module SharedDep; VERSION = '1.0.0'; end")
-          File.write(File.join(dep_v1_dir, 'shared_dep.gemspec'), <<~GEMSPEC)
-            Gem::Specification.new do |s|
-              s.name = "shared_dep"
-              s.version = "1.0.0"
-              s.summary = "Shared dependency v1"
-              s.authors = ["Test"]
-              s.files = ["lib/shared_dep.rb"]
-            end
-          GEMSPEC
-
-          dep_v2_dir = File.join(dir, 'gems', 'shared_dep_v2')
-          FileUtils.mkdir_p(File.join(dep_v2_dir, 'lib'))
-          File.write(File.join(dep_v2_dir, 'lib', 'shared_dep.rb'), "module SharedDep; VERSION = '2.0.0'; end")
-          File.write(File.join(dep_v2_dir, 'shared_dep.gemspec'), <<~GEMSPEC)
-            Gem::Specification.new do |s|
-              s.name = "shared_dep"
-              s.version = "2.0.0"
-              s.summary = "Shared dependency v2"
-              s.authors = ["Test"]
-              s.files = ["lib/shared_dep.rb"]
-            end
-          GEMSPEC
-
-          # Gem that requires shared_dep < 2.0
-          create_test_gem(dir, name: 'gem_a', dependencies: [{ name: 'shared_dep', version: '~> 1.0' }])
-
-          write_gemfile(dir, <<~G)
-            source "https://rubygems.org"
-            ignore_dependency! "shared_dep", type: :upper
-            gem "gem_a", path: "gems/gem_a"
-            gem "shared_dep", "2.0.0", path: "gems/shared_dep_v2"
-          G
-
-          # Use run_bundle_install for two-pass plugin activation
-          result = run_bundle_install(dir)
-
-          expect(result.success?).to be(true),
-                                     "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}"
-
-          lockfile = read_lockfile(dir)
-          expect(lockfile).to include('gem_a')
-          expect(lockfile).to include('shared_dep (2.0.0)')
-        end
-      end
+      assert(result.success?,
+             "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}")
+      assert(lockfile_includes_gem?(dir, 'legacy_gem'))
     end
   end
 
-  describe 'combining multiple ignore rules' do
-    it 'can ignore both Ruby and gem dependencies' do
-      with_tmp_dir do |dir|
-        # Create a complex gem that depends on json and has old Ruby requirement
-        create_test_gem(dir,
-                        name: 'complex_gem',
-                        required_ruby_version: '< 2.0',
-                        dependencies: [{ name: 'json', version: '>= 1.0' }])
+  def test_allows_installation_of_gems_with_upper_bound_ruby_version_constraints
+    skip('Test requires Ruby >= 3.0') if RUBY_VERSION < '3.0'
 
-        write_gemfile(dir, <<~G)
-          source "https://rubygems.org"
-          ignore_dependency! :ruby
-          ignore_dependency! "json"
-          gem "complex_gem", path: "gems/complex_gem"
-        G
+    with_tmp_dir do |dir|
+      create_test_gem(dir, name: 'upper_bound_ruby_gem', required_ruby_version: ['>= 2.5', '< 3.0'])
 
-        # Use run_bundle_install for two-pass plugin activation
-        result = run_bundle_install(dir)
+      write_gemfile(dir, <<~G)
+        source "https://rubygems.org"
+        ignore_dependency! :ruby, type: :upper
+        gem "upper_bound_ruby_gem", path: "gems/upper_bound_ruby_gem"
+      G
 
-        # Should succeed because:
-        # 1. Ruby version constraint is ignored (< 2.0 doesn't matter)
-        # 2. json dependency is ignored (won't try to fetch it)
-        expect(result.success?).to be(true),
-                                   "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}"
+      result = run_bundle_install(dir)
 
-        lockfile = read_lockfile(dir)
-        expect(lockfile).to include('complex_gem')
-        expect(lockfile).not_to include('json (')
-      end
+      assert(result.success?,
+             "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}")
+      assert(lockfile_includes_gem?(dir, 'upper_bound_ruby_gem'))
     end
   end
 
-  describe 'error handling' do
-    it 'raises error for invalid ignore type' do
-      with_tmp_dir do |dir|
-        create_test_gem(dir, name: 'simple_gem')
+  def test_still_enforces_lower_bound_when_only_upper_bound_ignored
+    with_tmp_dir do |dir|
+      create_test_gem(dir, name: 'future_gem', required_ruby_version: ['>= 99.0', '< 100.0'])
 
-        write_gemfile(dir, <<~G)
-          source "https://rubygems.org"
-          ignore_dependency! :ruby, type: :invalid_type
-          gem "simple_gem", path: "gems/simple_gem"
-        G
+      write_gemfile(dir, <<~G)
+        source "https://rubygems.org"
+        ignore_dependency! :ruby, type: :upper
+        gem "future_gem", path: "gems/future_gem"
+      G
 
-        # Use run_bundle_install for two-pass plugin activation
-        result = run_bundle_install(dir)
+      result = run_bundle_install(dir)
 
-        expect(result.success?).to be false
-        expect(result.stderr).to include('type must be :complete or :upper')
-      end
-    end
-
-    it 'raises error for invalid dependency name' do
-      with_tmp_dir do |dir|
-        create_test_gem(dir, name: 'simple_gem')
-
-        write_gemfile(dir, <<~G)
-          source "https://rubygems.org"
-          ignore_dependency! 123
-          gem "simple_gem", path: "gems/simple_gem"
-        G
-
-        # Use run_bundle_install for two-pass plugin activation
-        result = run_bundle_install(dir)
-
-        expect(result.success?).to be false
-        expect(result.stderr).to include('dependency name must be :ruby, :rubygems, or a gem name string')
-      end
+      refute(result.success?)
     end
   end
 
-  describe 'bundle lock' do
-    it 'generates lockfile with ignored dependencies filtered out' do
-      with_tmp_dir do |dir|
-        create_test_gem(dir, name: 'dep_gem')
-        create_test_gem(dir, name: 'main_gem', dependencies: [{ name: 'dep_gem', version: '= 1.0.0' }])
+  def test_installs_gems_without_their_ignored_dependencies
+    with_tmp_dir do |dir|
+      create_test_gem(dir, name: 'main_gem', dependencies: [{ name: 'json', version: '>= 2.0' }])
 
-        write_gemfile(dir, <<~G)
-          source "https://rubygems.org"
-          ignore_dependency! "dep_gem"
-          gem "main_gem", path: "gems/main_gem"
-        G
+      write_gemfile(dir, <<~G)
+        source "https://rubygems.org"
+        ignore_dependency! "json"
+        gem "main_gem", path: "gems/main_gem"
+      G
 
-        # First run to install plugin
-        run_bundle(dir, 'install')
+      result = run_bundle_install(dir)
 
-        # Remove lockfile and run lock with plugin active
-        lockfile_path = File.join(dir, 'Gemfile.lock')
-        File.delete(lockfile_path) if File.exist?(lockfile_path)
+      assert(result.success?,
+             "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}")
 
-        result = run_bundle(dir, 'lock')
+      lockfile = read_lockfile(dir)
+      assert_includes(lockfile, 'main_gem')
+      refute_includes(lockfile, 'json (')
+    end
+  end
 
-        expect(result.success?).to be(true),
-                                   "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}"
+  def test_can_ignore_multiple_gem_dependencies
+    with_tmp_dir do |dir|
+      create_test_gem(dir, name: 'main_gem', dependencies: [
+                        { name: 'json', version: '>= 2.0' },
+                        { name: 'fileutils', version: '>= 1.0' }
+                      ])
 
-        lockfile = read_lockfile(dir)
-        expect(lockfile).to include('main_gem')
-        expect(lockfile).not_to include('dep_gem (')
-      end
+      write_gemfile(dir, <<~G)
+        source "https://rubygems.org"
+        ignore_dependency! "json"
+        ignore_dependency! "fileutils"
+        gem "main_gem", path: "gems/main_gem"
+      G
+
+      result = run_bundle_install(dir)
+
+      assert(result.success?,
+             "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}")
+
+      lockfile = read_lockfile(dir)
+      assert_includes(lockfile, 'main_gem')
+      refute_includes(lockfile, 'json (')
+      refute_includes(lockfile, 'fileutils (')
+    end
+  end
+
+  def test_allows_resolving_gems_with_conflicting_upper_bound_constraints
+    with_tmp_dir do |dir|
+      dep_v1_dir = File.join(dir, 'gems', 'shared_dep_v1')
+      FileUtils.mkdir_p(File.join(dep_v1_dir, 'lib'))
+      File.write(File.join(dep_v1_dir, 'lib', 'shared_dep.rb'), "module SharedDep; VERSION = '1.0.0'; end")
+      File.write(File.join(dep_v1_dir, 'shared_dep.gemspec'), <<~GEMSPEC)
+        Gem::Specification.new do |s|
+          s.name = "shared_dep"
+          s.version = "1.0.0"
+          s.summary = "Shared dependency v1"
+          s.authors = ["Test"]
+          s.files = ["lib/shared_dep.rb"]
+        end
+      GEMSPEC
+
+      dep_v2_dir = File.join(dir, 'gems', 'shared_dep_v2')
+      FileUtils.mkdir_p(File.join(dep_v2_dir, 'lib'))
+      File.write(File.join(dep_v2_dir, 'lib', 'shared_dep.rb'), "module SharedDep; VERSION = '2.0.0'; end")
+      File.write(File.join(dep_v2_dir, 'shared_dep.gemspec'), <<~GEMSPEC)
+        Gem::Specification.new do |s|
+          s.name = "shared_dep"
+          s.version = "2.0.0"
+          s.summary = "Shared dependency v2"
+          s.authors = ["Test"]
+          s.files = ["lib/shared_dep.rb"]
+        end
+      GEMSPEC
+
+      create_test_gem(dir, name: 'gem_a', dependencies: [{ name: 'shared_dep', version: '~> 1.0' }])
+
+      write_gemfile(dir, <<~G)
+        source "https://rubygems.org"
+        ignore_dependency! "shared_dep", type: :upper
+        gem "gem_a", path: "gems/gem_a"
+        gem "shared_dep", "2.0.0", path: "gems/shared_dep_v2"
+      G
+
+      result = run_bundle_install(dir)
+
+      assert(result.success?,
+             "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}")
+
+      lockfile = read_lockfile(dir)
+      assert_includes(lockfile, 'gem_a')
+      assert_includes(lockfile, 'shared_dep (2.0.0)')
+    end
+  end
+
+  def test_can_ignore_both_ruby_and_gem_dependencies
+    with_tmp_dir do |dir|
+      create_test_gem(dir,
+                      name: 'complex_gem',
+                      required_ruby_version: '< 2.0',
+                      dependencies: [{ name: 'json', version: '>= 1.0' }])
+
+      write_gemfile(dir, <<~G)
+        source "https://rubygems.org"
+        ignore_dependency! :ruby
+        ignore_dependency! "json"
+        gem "complex_gem", path: "gems/complex_gem"
+      G
+
+      result = run_bundle_install(dir)
+
+      assert(result.success?,
+             "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}")
+
+      lockfile = read_lockfile(dir)
+      assert_includes(lockfile, 'complex_gem')
+      refute_includes(lockfile, 'json (')
+    end
+  end
+
+  def test_raises_error_for_invalid_ignore_type
+    with_tmp_dir do |dir|
+      create_test_gem(dir, name: 'simple_gem')
+
+      write_gemfile(dir, <<~G)
+        source "https://rubygems.org"
+        ignore_dependency! :ruby, type: :invalid_type
+        gem "simple_gem", path: "gems/simple_gem"
+      G
+
+      result = run_bundle_install(dir)
+
+      refute(result.success?)
+      assert_includes(result.stderr, 'type must be :complete or :upper')
+    end
+  end
+
+  def test_raises_error_for_invalid_dependency_name
+    with_tmp_dir do |dir|
+      create_test_gem(dir, name: 'simple_gem')
+
+      write_gemfile(dir, <<~G)
+        source "https://rubygems.org"
+        ignore_dependency! 123
+        gem "simple_gem", path: "gems/simple_gem"
+      G
+
+      result = run_bundle_install(dir)
+
+      refute(result.success?)
+      assert_includes(result.stderr, 'dependency name must be :ruby, :rubygems, or a gem name string')
+    end
+  end
+
+  def test_generates_lockfile_with_ignored_dependencies_filtered_out
+    with_tmp_dir do |dir|
+      create_test_gem(dir, name: 'dep_gem')
+      create_test_gem(dir, name: 'main_gem', dependencies: [{ name: 'dep_gem', version: '= 1.0.0' }])
+
+      write_gemfile(dir, <<~G)
+        source "https://rubygems.org"
+        ignore_dependency! "dep_gem"
+        gem "main_gem", path: "gems/main_gem"
+      G
+
+      run_bundle(dir, 'install')
+
+      lockfile_path = File.join(dir, 'Gemfile.lock')
+      File.delete(lockfile_path) if File.exist?(lockfile_path)
+
+      result = run_bundle(dir, 'lock')
+
+      assert(result.success?,
+             "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}")
+
+      lockfile = read_lockfile(dir)
+      assert_includes(lockfile, 'main_gem')
+      refute_includes(lockfile, 'dep_gem (')
     end
   end
 end

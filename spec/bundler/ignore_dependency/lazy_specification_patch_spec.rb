@@ -1,14 +1,23 @@
 # frozen_string_literal: true
 
-RSpec.describe Bundler::IgnoreDependency::LazySpecificationPatch do
+require_relative '../../spec_helper'
+
+class TestLazySpecificationPatch < Minitest::Test
   def with_ignored_dependencies(deps)
-    definition = instance_double(Bundler::Definition, ignored_dependencies: deps)
-    allow(Bundler).to receive(:definition).and_return(definition)
-    # Reset the memoized cache
+    definition = Object.new
+    definition.define_singleton_method(:ignored_dependencies) { deps }
+
+    Bundler.stub(:definition, definition) do
+      Bundler::IgnoreDependency.instance_variable_set(:@completely_ignored_gem_names, nil)
+      yield
+    end
+  end
+
+  def teardown
     Bundler::IgnoreDependency.instance_variable_set(:@completely_ignored_gem_names, nil)
   end
 
-  def gem_dependency(name, requirement = ">= 0")
+  def gem_dependency(name, requirement = '>= 0')
     Gem::Dependency.new(name, requirement)
   end
 
@@ -18,82 +27,69 @@ RSpec.describe Bundler::IgnoreDependency::LazySpecificationPatch do
     lazy_spec
   end
 
-  describe "#filter_ignored_dependencies (private)" do
-    # Create a test class that includes the patch module to test the private method
-    let(:patch_class) do
-      Class.new do
-        extend Bundler::IgnoreDependency::LazySpecificationPatch
+  def setup
+    @patch_class = Class.new do
+      extend Bundler::IgnoreDependency::LazySpecificationPatch
 
-        class << self
-          public :filter_ignored_dependencies
-        end
+      class << self
+        public :filter_ignored_dependencies
       end
     end
+  end
 
-    context "when no gems are completely ignored" do
-      before { with_ignored_dependencies({}) }
+  def test_returns_lazy_spec_with_dependencies_unchanged_when_none_ignored
+    with_ignored_dependencies({}) do
+      deps = [gem_dependency('activesupport'), gem_dependency('nokogiri')]
+      lazy_spec = mock_lazy_spec('rails', '7.0.0', deps)
 
-      it "returns lazy spec with dependencies unchanged" do
-        deps = [gem_dependency("activesupport"), gem_dependency("nokogiri")]
-        lazy_spec = mock_lazy_spec("rails", "7.0.0", deps)
+      result = @patch_class.filter_ignored_dependencies(lazy_spec)
 
-        result = patch_class.filter_ignored_dependencies(lazy_spec)
-
-        expect(result.dependencies.map(&:name)).to eq(["activesupport", "nokogiri"])
-      end
+      assert_equal(%w[activesupport nokogiri], result.dependencies.map(&:name))
     end
+  end
 
-    context "when a gem is completely ignored" do
-      before { with_ignored_dependencies({ "activerecord" => :complete }) }
+  def test_filters_out_ignored_gem_from_dependencies
+    with_ignored_dependencies({ 'activerecord' => :complete }) do
+      deps = [
+        gem_dependency('activesupport'),
+        gem_dependency('activerecord'),
+        gem_dependency('nokogiri')
+      ]
+      lazy_spec = mock_lazy_spec('rails', '7.0.0', deps)
 
-      it "filters out the ignored gem from dependencies" do
-        deps = [
-          gem_dependency("activesupport"),
-          gem_dependency("activerecord"),
-          gem_dependency("nokogiri")
-        ]
-        lazy_spec = mock_lazy_spec("rails", "7.0.0", deps)
+      result = @patch_class.filter_ignored_dependencies(lazy_spec)
 
-        result = patch_class.filter_ignored_dependencies(lazy_spec)
-
-        expect(result.dependencies.map(&:name)).to eq(["activesupport", "nokogiri"])
-      end
+      assert_equal(%w[activesupport nokogiri], result.dependencies.map(&:name))
     end
+  end
 
-    context "when multiple gems are completely ignored" do
-      before do
-        with_ignored_dependencies({
-          "activerecord" => :complete,
-          "nokogiri" => :complete
-        })
-      end
+  def test_filters_out_all_ignored_gems_from_dependencies
+    with_ignored_dependencies({
+                                'activerecord' => :complete,
+                                'nokogiri' => :complete
+                              }) do
+      deps = [
+        gem_dependency('activesupport'),
+        gem_dependency('activerecord'),
+        gem_dependency('nokogiri'),
+        gem_dependency('rack')
+      ]
+      lazy_spec = mock_lazy_spec('rails', '7.0.0', deps)
 
-      it "filters out all ignored gems from dependencies" do
-        deps = [
-          gem_dependency("activesupport"),
-          gem_dependency("activerecord"),
-          gem_dependency("nokogiri"),
-          gem_dependency("rack")
-        ]
-        lazy_spec = mock_lazy_spec("rails", "7.0.0", deps)
+      result = @patch_class.filter_ignored_dependencies(lazy_spec)
 
-        result = patch_class.filter_ignored_dependencies(lazy_spec)
-
-        expect(result.dependencies.map(&:name)).to eq(["activesupport", "rack"])
-      end
+      assert_equal(%w[activesupport rack], result.dependencies.map(&:name))
     end
+  end
 
-    context "when gem has upper bound ignored (not complete)" do
-      before { with_ignored_dependencies({ "nokogiri" => :upper }) }
+  def test_does_not_filter_out_gem_when_only_upper_bound_ignored
+    with_ignored_dependencies({ 'nokogiri' => :upper }) do
+      deps = [gem_dependency('activesupport'), gem_dependency('nokogiri')]
+      lazy_spec = mock_lazy_spec('rails', '7.0.0', deps)
 
-      it "does not filter out the gem (only complete ignores filter)" do
-        deps = [gem_dependency("activesupport"), gem_dependency("nokogiri")]
-        lazy_spec = mock_lazy_spec("rails", "7.0.0", deps)
+      result = @patch_class.filter_ignored_dependencies(lazy_spec)
 
-        result = patch_class.filter_ignored_dependencies(lazy_spec)
-
-        expect(result.dependencies.map(&:name)).to eq(["activesupport", "nokogiri"])
-      end
+      assert_equal(%w[activesupport nokogiri], result.dependencies.map(&:name))
     end
   end
 end

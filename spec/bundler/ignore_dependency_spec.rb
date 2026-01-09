@@ -1,186 +1,165 @@
 # frozen_string_literal: true
 
-RSpec.describe Bundler::IgnoreDependency do
+require_relative '../spec_helper'
+
+class TestBundlerIgnoreDependency < Minitest::Test
+  def test_ignored_dependencies_returns_empty_hash_when_no_definition
+    with_ignored_dependencies(nil) do
+      assert_equal({}, Bundler::IgnoreDependency.ignored_dependencies)
+    end
+  end
+
+  def test_ignored_dependencies_returns_ignored_dependencies_from_definition
+    with_ignored_dependencies({ ruby: :upper }) do
+      assert_equal({ ruby: :upper }, Bundler::IgnoreDependency.ignored_dependencies)
+    end
+  end
+
+  def test_ignore_type_for_returns_nil_for_non_ignored_dependency
+    with_ignored_dependencies({}) do
+      assert_nil(Bundler::IgnoreDependency.ignore_type_for(:ruby))
+    end
+  end
+
+  def test_ignore_type_for_returns_the_ignore_type_for_ignored_dependency
+    with_ignored_dependencies({ ruby: :upper, 'nokogiri' => :complete }) do
+      assert_equal(:upper, Bundler::IgnoreDependency.ignore_type_for(:ruby))
+      assert_equal(:complete, Bundler::IgnoreDependency.ignore_type_for('nokogiri'))
+    end
+  end
+
+  def test_completely_ignored_returns_true_when_type_is_complete
+    with_ignored_dependencies({ ruby: :complete }) do
+      assert(Bundler::IgnoreDependency.completely_ignored?(:ruby))
+    end
+  end
+
+  def test_completely_ignored_returns_false_when_type_is_upper
+    with_ignored_dependencies({ ruby: :upper }) do
+      refute(Bundler::IgnoreDependency.completely_ignored?(:ruby))
+    end
+  end
+
+  def test_completely_ignored_returns_false_when_not_ignored
+    with_ignored_dependencies({}) do
+      refute(Bundler::IgnoreDependency.completely_ignored?(:ruby))
+    end
+  end
+
+  def test_upper_bound_ignored_returns_true_when_type_is_upper
+    with_ignored_dependencies({ ruby: :upper }) do
+      assert(Bundler::IgnoreDependency.upper_bound_ignored?(:ruby))
+    end
+  end
+
+  def test_upper_bound_ignored_returns_false_when_type_is_complete
+    with_ignored_dependencies({ ruby: :complete }) do
+      refute(Bundler::IgnoreDependency.upper_bound_ignored?(:ruby))
+    end
+  end
+
+  def test_upper_bound_ignored_returns_false_when_not_ignored
+    with_ignored_dependencies({}) do
+      refute(Bundler::IgnoreDependency.upper_bound_ignored?(:ruby))
+    end
+  end
+
+  def test_remove_upper_bounds_returns_default_requirement_when_nil
+    filtered = Bundler::IgnoreDependency.remove_upper_bounds(nil)
+    assert_equal(Gem::Requirement.default, filtered)
+  end
+
+  def test_remove_upper_bounds_returns_default_requirement_when_empty
+    requirement = Gem::Requirement.new([])
+    filtered = Bundler::IgnoreDependency.remove_upper_bounds(requirement)
+    assert_equal(Gem::Requirement.default, filtered)
+  end
+
+  def test_remove_upper_bounds_keeps_lower_bound_with_greater_equal_operator
+    requirement = Gem::Requirement.new('>= 2.7')
+    filtered = Bundler::IgnoreDependency.remove_upper_bounds(requirement)
+    assert_equal(Gem::Requirement.new('>= 2.7'), filtered)
+  end
+
+  def test_remove_upper_bounds_keeps_lower_bound_with_greater_operator
+    requirement = Gem::Requirement.new('> 2.7')
+    filtered = Bundler::IgnoreDependency.remove_upper_bounds(requirement)
+    assert_equal(Gem::Requirement.new('> 2.7'), filtered)
+  end
+
+  def test_remove_upper_bounds_keeps_exact_version_with_equal_operator
+    requirement = Gem::Requirement.new('= 3.0')
+    filtered = Bundler::IgnoreDependency.remove_upper_bounds(requirement)
+    assert_equal(Gem::Requirement.new('= 3.0'), filtered)
+  end
+
+  def test_remove_upper_bounds_returns_default_requirement_with_less_operator
+    requirement = Gem::Requirement.new('< 4.0')
+    filtered = Bundler::IgnoreDependency.remove_upper_bounds(requirement)
+    assert_equal(Gem::Requirement.default, filtered)
+  end
+
+  def test_remove_upper_bounds_returns_default_requirement_with_less_equal_operator
+    requirement = Gem::Requirement.new('<= 3.2')
+    filtered = Bundler::IgnoreDependency.remove_upper_bounds(requirement)
+    assert_equal(Gem::Requirement.default, filtered)
+  end
+
+  def test_remove_upper_bounds_removes_upper_bound_and_keeps_lower_bound_with_mixed_bounds
+    requirement = Gem::Requirement.new(['>= 2.7', '< 3.1'])
+    filtered = Bundler::IgnoreDependency.remove_upper_bounds(requirement)
+    assert_equal(Gem::Requirement.new('>= 2.7'), filtered)
+  end
+
+  def test_remove_upper_bounds_converts_pessimistic_operator_to_greater_equal_equivalent
+    requirement = Gem::Requirement.new('~> 2.7')
+    filtered = Bundler::IgnoreDependency.remove_upper_bounds(requirement)
+    assert_equal(Gem::Requirement.new('>= 2.7'), filtered)
+  end
+
+  def test_apply_ignore_rule_returns_default_requirement_when_completely_ignored
+    requirement = Gem::Requirement.new(['>= 2.7', '< 3.3'])
+    with_ignored_dependencies({ ruby: :complete }) do
+      result = Bundler::IgnoreDependency.apply_ignore_rule(requirement, :ruby)
+      assert_equal(Gem::Requirement.default, result)
+    end
+  end
+
+  def test_apply_ignore_rule_removes_upper_bounds_when_upper_bound_ignored
+    requirement = Gem::Requirement.new(['>= 2.7', '< 3.3'])
+    with_ignored_dependencies({ ruby: :upper }) do
+      result = Bundler::IgnoreDependency.apply_ignore_rule(requirement, :ruby)
+      assert_equal(Gem::Requirement.new('>= 2.7'), result)
+    end
+  end
+
+  def test_apply_ignore_rule_returns_original_requirement_when_not_ignored
+    requirement = Gem::Requirement.new(['>= 2.7', '< 3.3'])
+    with_ignored_dependencies({}) do
+      result = Bundler::IgnoreDependency.apply_ignore_rule(requirement, :ruby)
+      assert_equal(requirement, result)
+    end
+  end
+
+  def teardown
+    # Clean up cache after each test
+    Bundler::IgnoreDependency.instance_variable_set(:@completely_ignored_gem_names, nil)
+  end
+
+  private
+
   def with_ignored_dependencies(deps)
-    definition = instance_double(Bundler::Definition, ignored_dependencies: deps)
-    allow(Bundler).to receive(:definition).and_return(definition)
-    yield
-  end
+    definition = if deps.nil?
+                   nil
+                 else
+                   stub_definition = Object.new
+                   stub_definition.define_singleton_method(:ignored_dependencies) { deps }
+                   stub_definition
+                 end
 
-  describe ".ignored_dependencies" do
-    it "returns empty hash when no definition" do
-      allow(Bundler).to receive(:definition).and_return(nil)
-      expect(described_class.ignored_dependencies).to eq({})
-    end
-
-    it "returns ignored dependencies from definition" do
-      with_ignored_dependencies({ ruby: :upper }) do
-        expect(described_class.ignored_dependencies).to eq({ ruby: :upper })
-      end
-    end
-  end
-
-  describe ".ignore_type_for" do
-    it "returns nil for non-ignored dependency" do
-      with_ignored_dependencies({}) do
-        expect(described_class.ignore_type_for(:ruby)).to be_nil
-      end
-    end
-
-    it "returns the ignore type for ignored dependency" do
-      with_ignored_dependencies({ ruby: :upper, "nokogiri" => :complete }) do
-        expect(described_class.ignore_type_for(:ruby)).to eq(:upper)
-        expect(described_class.ignore_type_for("nokogiri")).to eq(:complete)
-      end
-    end
-  end
-
-  describe ".completely_ignored?" do
-    it "returns true when type is :complete" do
-      with_ignored_dependencies({ ruby: :complete }) do
-        expect(described_class.completely_ignored?(:ruby)).to be true
-      end
-    end
-
-    it "returns false when type is :upper" do
-      with_ignored_dependencies({ ruby: :upper }) do
-        expect(described_class.completely_ignored?(:ruby)).to be false
-      end
-    end
-
-    it "returns false when not ignored" do
-      with_ignored_dependencies({}) do
-        expect(described_class.completely_ignored?(:ruby)).to be false
-      end
-    end
-  end
-
-  describe ".upper_bound_ignored?" do
-    it "returns true when type is :upper" do
-      with_ignored_dependencies({ ruby: :upper }) do
-        expect(described_class.upper_bound_ignored?(:ruby)).to be true
-      end
-    end
-
-    it "returns false when type is :complete" do
-      with_ignored_dependencies({ ruby: :complete }) do
-        expect(described_class.upper_bound_ignored?(:ruby)).to be false
-      end
-    end
-
-    it "returns false when not ignored" do
-      with_ignored_dependencies({}) do
-        expect(described_class.upper_bound_ignored?(:ruby)).to be false
-      end
-    end
-  end
-
-  describe ".remove_upper_bounds" do
-    subject(:filtered) { described_class.remove_upper_bounds(requirement) }
-
-    context "when requirement is nil" do
-      let(:requirement) { nil }
-
-      it "returns default requirement" do
-        expect(filtered).to eq(Gem::Requirement.default)
-      end
-    end
-
-    context "when requirement is empty" do
-      let(:requirement) { Gem::Requirement.new([]) }
-
-      it "returns default requirement" do
-        expect(filtered).to eq(Gem::Requirement.default)
-      end
-    end
-
-    context "with only lower bounds" do
-      context "with >= operator" do
-        let(:requirement) { Gem::Requirement.new(">= 2.7") }
-
-        it "keeps the lower bound" do
-          expect(filtered).to eq(Gem::Requirement.new(">= 2.7"))
-        end
-      end
-
-      context "with > operator" do
-        let(:requirement) { Gem::Requirement.new("> 2.7") }
-
-        it "keeps the lower bound" do
-          expect(filtered).to eq(Gem::Requirement.new("> 2.7"))
-        end
-      end
-
-      context "with = operator" do
-        let(:requirement) { Gem::Requirement.new("= 3.0") }
-
-        it "keeps the exact version" do
-          expect(filtered).to eq(Gem::Requirement.new("= 3.0"))
-        end
-      end
-    end
-
-    context "with only upper bounds" do
-      context "with < operator" do
-        let(:requirement) { Gem::Requirement.new("< 4.0") }
-
-        it "returns default requirement" do
-          expect(filtered).to eq(Gem::Requirement.default)
-        end
-      end
-
-      context "with <= operator" do
-        let(:requirement) { Gem::Requirement.new("<= 3.2") }
-
-        it "returns default requirement" do
-          expect(filtered).to eq(Gem::Requirement.default)
-        end
-      end
-    end
-
-    context "with mixed bounds" do
-      context "with >= and <" do
-        let(:requirement) { Gem::Requirement.new([">= 2.7", "< 3.1"]) }
-
-        it "removes upper bound and keeps lower bound" do
-          expect(filtered).to eq(Gem::Requirement.new(">= 2.7"))
-        end
-      end
-    end
-
-    context "with pessimistic operator ~>" do
-      context "with ~> alone" do
-        let(:requirement) { Gem::Requirement.new("~> 2.7") }
-
-        it "converts to >= equivalent" do
-          expect(filtered).to eq(Gem::Requirement.new(">= 2.7"))
-        end
-      end
-    end
-  end
-
-  describe ".apply_ignore_rule" do
-    let(:requirement) { Gem::Requirement.new([">= 2.7", "< 3.3"]) }
-
-    it "returns default requirement when completely ignored" do
-      with_ignored_dependencies({ ruby: :complete }) do
-        result = described_class.apply_ignore_rule(requirement, :ruby)
-        expect(result).to eq(Gem::Requirement.default)
-      end
-    end
-
-    it "removes upper bounds when upper bound ignored" do
-      with_ignored_dependencies({ ruby: :upper }) do
-        result = described_class.apply_ignore_rule(requirement, :ruby)
-        expect(result).to eq(Gem::Requirement.new(">= 2.7"))
-      end
-    end
-
-    it "returns original requirement when not ignored" do
-      with_ignored_dependencies({}) do
-        result = described_class.apply_ignore_rule(requirement, :ruby)
-        expect(result).to eq(requirement)
-      end
+    Bundler.stub(:definition, definition) do
+      Bundler::IgnoreDependency.instance_variable_set(:@completely_ignored_gem_names, nil)
+      yield
     end
   end
 end

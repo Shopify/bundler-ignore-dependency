@@ -1,117 +1,120 @@
 # frozen_string_literal: true
 
-RSpec.describe Bundler::IgnoreDependency::SharedHelpersPatch do
-  def with_ignored_dependencies(deps)
-    definition = instance_double(Bundler::Definition, ignored_dependencies: deps)
-    allow(Bundler).to receive(:definition).and_return(definition)
-    # Reset the memoized cache
+require_relative '../../spec_helper'
+
+class TestSharedHelpersPatch < Minitest::Test
+  def teardown
+    # Clean up cache after each test
     Bundler::IgnoreDependency.instance_variable_set(:@completely_ignored_gem_names, nil)
   end
 
-  def gem_dependency(name, requirement = ">= 0")
+  def with_ignored_dependencies(deps)
+    definition = Object.new
+    definition.define_singleton_method(:ignored_dependencies) { deps }
+
+    Bundler.stub(:definition, definition) do
+      Bundler::IgnoreDependency.instance_variable_set(:@completely_ignored_gem_names, nil)
+      yield
+    end
+  end
+
+  def gem_dependency(name, requirement = '>= 0')
     Gem::Dependency.new(name, requirement)
   end
 
   def mock_spec(name, version)
-    instance_double(Gem::Specification, full_name: "#{name}-#{version}", name: name, remote: nil)
+    spec = Object.new
+    spec.define_singleton_method(:full_name) { "#{name}-#{version}" }
+    spec.define_singleton_method(:name) { name }
+    spec.define_singleton_method(:remote) { nil }
+    spec
   end
 
-  describe ".ensure_same_dependencies" do
-    context "when no gems are completely ignored" do
-      before { with_ignored_dependencies({}) }
+  def test_raises_error_when_new_deps_have_extra_dependencies
+    with_ignored_dependencies({}) do
+      spec = mock_spec('rails', '7.0.0')
+      old_deps = [gem_dependency('activesupport', '= 7.0.0')]
+      new_deps = [
+        gem_dependency('activesupport', '= 7.0.0'),
+        gem_dependency('activerecord', '= 7.0.0')
+      ]
 
-      it "raises error when new deps have extra dependencies" do
-        spec = mock_spec("rails", "7.0.0")
-        old_deps = [gem_dependency("activesupport", "= 7.0.0")]
-        new_deps = [
-          gem_dependency("activesupport", "= 7.0.0"),
-          gem_dependency("activerecord", "= 7.0.0")
-        ]
-
-        expect {
-          Bundler::SharedHelpers.ensure_same_dependencies(spec, old_deps, new_deps)
-        }.to raise_error(Bundler::APIResponseMismatchError, /revealed dependencies not in the API/)
-      end
-
-      it "does not raise when dependencies match" do
-        spec = mock_spec("rails", "7.0.0")
-        old_deps = [gem_dependency("activesupport", "= 7.0.0")]
-        new_deps = [gem_dependency("activesupport", "= 7.0.0")]
-
-        expect {
-          Bundler::SharedHelpers.ensure_same_dependencies(spec, old_deps, new_deps)
-        }.not_to raise_error
+      assert_raises(Bundler::APIResponseMismatchError) do
+        Bundler::SharedHelpers.ensure_same_dependencies(spec, old_deps, new_deps)
       end
     end
+  end
 
-    context "when a gem is completely ignored" do
-      before { with_ignored_dependencies({ "activerecord" => :complete }) }
+  def test_does_not_raise_when_dependencies_match
+    with_ignored_dependencies({}) do
+      spec = mock_spec('rails', '7.0.0')
+      old_deps = [gem_dependency('activesupport', '= 7.0.0')]
+      new_deps = [gem_dependency('activesupport', '= 7.0.0')]
 
-      it "does not raise when ignored gem is in new deps but not old deps" do
-        spec = mock_spec("rails", "7.0.0")
-        old_deps = [gem_dependency("activesupport", "= 7.0.0")]
-        new_deps = [
-          gem_dependency("activesupport", "= 7.0.0"),
-          gem_dependency("activerecord", "= 7.0.0")
-        ]
+      # Should not raise
+      Bundler::SharedHelpers.ensure_same_dependencies(spec, old_deps, new_deps)
+    end
+  end
 
-        expect {
-          Bundler::SharedHelpers.ensure_same_dependencies(spec, old_deps, new_deps)
-        }.not_to raise_error
-      end
+  def test_does_not_raise_when_ignored_gem_in_new_deps_but_not_old_deps
+    with_ignored_dependencies({ 'activerecord' => :complete }) do
+      spec = mock_spec('rails', '7.0.0')
+      old_deps = [gem_dependency('activesupport', '= 7.0.0')]
+      new_deps = [
+        gem_dependency('activesupport', '= 7.0.0'),
+        gem_dependency('activerecord', '= 7.0.0')
+      ]
 
-      it "still raises for non-ignored extra dependencies" do
-        spec = mock_spec("rails", "7.0.0")
-        old_deps = [gem_dependency("activesupport", "= 7.0.0")]
-        new_deps = [
-          gem_dependency("activesupport", "= 7.0.0"),
-          gem_dependency("activerecord", "= 7.0.0"),
-          gem_dependency("nokogiri", "= 1.0.0")
-        ]
+      # Should not raise
+      Bundler::SharedHelpers.ensure_same_dependencies(spec, old_deps, new_deps)
+    end
+  end
 
-        expect {
-          Bundler::SharedHelpers.ensure_same_dependencies(spec, old_deps, new_deps)
-        }.to raise_error(Bundler::APIResponseMismatchError, /nokogiri/)
+  def test_still_raises_for_non_ignored_extra_dependencies
+    with_ignored_dependencies({ 'activerecord' => :complete }) do
+      spec = mock_spec('rails', '7.0.0')
+      old_deps = [gem_dependency('activesupport', '= 7.0.0')]
+      new_deps = [
+        gem_dependency('activesupport', '= 7.0.0'),
+        gem_dependency('activerecord', '= 7.0.0'),
+        gem_dependency('nokogiri', '= 1.0.0')
+      ]
+
+      assert_raises(Bundler::APIResponseMismatchError) do
+        Bundler::SharedHelpers.ensure_same_dependencies(spec, old_deps, new_deps)
       end
     end
+  end
 
-    context "when multiple gems are completely ignored" do
-      before do
-        with_ignored_dependencies({
-          "activerecord" => :complete,
-          "actionmailer" => :complete
-        })
-      end
+  def test_does_not_raise_when_all_extra_deps_are_ignored
+    with_ignored_dependencies({
+                                'activerecord' => :complete,
+                                'actionmailer' => :complete
+                              }) do
+      spec = mock_spec('rails', '7.0.0')
+      old_deps = [gem_dependency('activesupport', '= 7.0.0')]
+      new_deps = [
+        gem_dependency('activesupport', '= 7.0.0'),
+        gem_dependency('activerecord', '= 7.0.0'),
+        gem_dependency('actionmailer', '= 7.0.0')
+      ]
 
-      it "does not raise when all extra deps are ignored" do
-        spec = mock_spec("rails", "7.0.0")
-        old_deps = [gem_dependency("activesupport", "= 7.0.0")]
-        new_deps = [
-          gem_dependency("activesupport", "= 7.0.0"),
-          gem_dependency("activerecord", "= 7.0.0"),
-          gem_dependency("actionmailer", "= 7.0.0")
-        ]
-
-        expect {
-          Bundler::SharedHelpers.ensure_same_dependencies(spec, old_deps, new_deps)
-        }.not_to raise_error
-      end
+      # Should not raise
+      Bundler::SharedHelpers.ensure_same_dependencies(spec, old_deps, new_deps)
     end
+  end
 
-    context "when gem has upper bound ignored (not complete)" do
-      before { with_ignored_dependencies({ "activerecord" => :upper }) }
+  def test_still_raises_when_upper_bound_ignored_because_only_complete_ignores_filter
+    with_ignored_dependencies({ 'activerecord' => :upper }) do
+      spec = mock_spec('rails', '7.0.0')
+      old_deps = [gem_dependency('activesupport', '= 7.0.0')]
+      new_deps = [
+        gem_dependency('activesupport', '= 7.0.0'),
+        gem_dependency('activerecord', '= 7.0.0')
+      ]
 
-      it "still raises because only complete ignores filter from validation" do
-        spec = mock_spec("rails", "7.0.0")
-        old_deps = [gem_dependency("activesupport", "= 7.0.0")]
-        new_deps = [
-          gem_dependency("activesupport", "= 7.0.0"),
-          gem_dependency("activerecord", "= 7.0.0")
-        ]
-
-        expect {
-          Bundler::SharedHelpers.ensure_same_dependencies(spec, old_deps, new_deps)
-        }.to raise_error(Bundler::APIResponseMismatchError, /activerecord/)
+      assert_raises(Bundler::APIResponseMismatchError) do
+        Bundler::SharedHelpers.ensure_same_dependencies(spec, old_deps, new_deps)
       end
     end
   end

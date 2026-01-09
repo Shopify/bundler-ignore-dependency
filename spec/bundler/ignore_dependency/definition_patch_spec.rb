@@ -1,16 +1,18 @@
 # frozen_string_literal: true
 
-RSpec.describe Bundler::IgnoreDependency::DefinitionPatch do
-  let(:definition) { Bundler::Definition.new(nil, [], Bundler::SourceList.new, {}) }
+require_relative '../../spec_helper'
 
-  describe "#ignored_dependencies" do
-    it "defaults to empty hash" do
-      expect(definition.ignored_dependencies).to eq({})
-    end
+class TestDefinitionPatch < Minitest::Test
+  def setup
+    @definition = Bundler::Definition.new(nil, [], Bundler::SourceList.new, {})
+  end
 
-    it "can be set to a hash" do
-      definition.ignored_dependencies = { ruby: :upper, "nokogiri" => :complete }
-      expect(definition.ignored_dependencies).to eq({ ruby: :upper, "nokogiri" => :complete })
-    end
+  def test_ignored_dependencies_defaults_to_empty_hash
+    assert_equal({}, @definition.ignored_dependencies)
+  end
+
+  def test_ignored_dependencies_can_be_set_to_hash
+    @definition.ignored_dependencies = { ruby: :upper, 'nokogiri' => :complete }
+    assert_equal({ ruby: :upper, 'nokogiri' => :complete }, @definition.ignored_dependencies)
   end
 end

@@ -1,148 +1,139 @@
 # frozen_string_literal: true
 
-RSpec.describe Bundler::IgnoreDependency::ResolverPatch do
-  def with_ignored_dependencies(deps)
-    definition = instance_double(Bundler::Definition, ignored_dependencies: deps)
-    allow(Bundler).to receive(:definition).and_return(definition)
+require_relative '../../spec_helper'
+
+class TestResolverPatch < Minitest::Test
+  def setup
+    @resolver_class = Class.new do
+      include Bundler::IgnoreDependency::ResolverPatch
+      public :filter_ignored_dependencies
+    end
+    @resolver = @resolver_class.new
   end
 
-  describe "#filter_ignored_dependencies (private)" do
-    let(:resolver_class) do
-      Class.new do
-        include Bundler::IgnoreDependency::ResolverPatch
+  def with_ignored_dependencies(deps)
+    definition = Object.new
+    definition.define_singleton_method(:ignored_dependencies) { deps }
 
-        public :filter_ignored_dependencies
-      end
+    Bundler.stub(:definition, definition) do
+      Bundler::IgnoreDependency.instance_variable_set(:@completely_ignored_gem_names, nil)
+      yield
     end
+  end
 
-    let(:resolver) { resolver_class.new }
+  def teardown
+    Bundler::IgnoreDependency.instance_variable_set(:@completely_ignored_gem_names, nil)
+  end
 
-    def ruby_dependency(requirement)
-      Gem::Dependency.new("Ruby\0", requirement)
+  def ruby_dependency(requirement)
+    Gem::Dependency.new("Ruby\0", requirement)
+  end
+
+  def rubygems_dependency(requirement)
+    Gem::Dependency.new("RubyGems\0", requirement)
+  end
+
+  def gem_dependency(name, requirement)
+    Gem::Dependency.new(name, requirement)
+  end
+
+  def test_returns_dependencies_unchanged_when_none_ignored
+    with_ignored_dependencies({}) do
+      deps = [ruby_dependency('>= 2.7'), gem_dependency('rails', '>= 7.0')]
+      result = @resolver.filter_ignored_dependencies(deps)
+      assert_equal(["Ruby\0", 'rails'], result.map(&:name))
     end
+  end
 
-    def rubygems_dependency(requirement)
-      Gem::Dependency.new("RubyGems\0", requirement)
+  def test_removes_ruby_dependency_entirely_when_completely_ignored
+    with_ignored_dependencies({ "Ruby\0" => :complete }) do
+      deps = [
+        ruby_dependency(['>= 2.7', '< 3.3']),
+        gem_dependency('rails', '>= 7.0')
+      ]
+
+      result = @resolver.filter_ignored_dependencies(deps)
+
+      assert_equal(['rails'], result.map(&:name))
     end
+  end
 
-    def gem_dependency(name, requirement)
-      Gem::Dependency.new(name, requirement)
+  def test_removes_upper_bounds_from_ruby_dependency
+    with_ignored_dependencies({ "Ruby\0" => :upper }) do
+      deps = [ruby_dependency(['>= 2.7', '< 3.3'])]
+
+      result = @resolver.filter_ignored_dependencies(deps)
+
+      assert_equal("Ruby\0", result.first.name)
+      assert_equal(Gem::Requirement.new('>= 2.7'), result.first.requirement)
     end
+  end
 
-    context "when no dependencies are ignored" do
-      before { with_ignored_dependencies({}) }
+  def test_removes_rubygems_dependency_entirely_when_completely_ignored
+    with_ignored_dependencies({ "RubyGems\0" => :complete }) do
+      deps = [
+        rubygems_dependency('>= 3.0'),
+        gem_dependency('rails', '>= 7.0')
+      ]
 
-      it "returns dependencies unchanged" do
-        deps = [ruby_dependency(">= 2.7"), gem_dependency("rails", ">= 7.0")]
-        result = resolver.filter_ignored_dependencies(deps)
-        expect(result).to eq(deps)
-      end
+      result = @resolver.filter_ignored_dependencies(deps)
+
+      assert_equal(['rails'], result.map(&:name))
     end
+  end
 
-    context "when Ruby is completely ignored" do
-      before { with_ignored_dependencies({ "Ruby\0" => :complete }) }
+  def test_removes_gem_dependency_entirely_when_completely_ignored
+    with_ignored_dependencies({ 'nokogiri' => :complete }) do
+      deps = [
+        gem_dependency('nokogiri', '>= 1.0'),
+        gem_dependency('rails', '>= 7.0')
+      ]
 
-      it "removes Ruby dependency entirely" do
-        deps = [
-          ruby_dependency([">= 2.7", "< 3.3"]),
-          gem_dependency("rails", ">= 7.0")
-        ]
+      result = @resolver.filter_ignored_dependencies(deps)
 
-        result = resolver.filter_ignored_dependencies(deps)
-
-        expect(result.map(&:name)).to eq(["rails"])
-      end
+      assert_equal(['rails'], result.map(&:name))
     end
+  end
 
-    context "when Ruby upper bound is ignored" do
-      before { with_ignored_dependencies({ "Ruby\0" => :upper }) }
+  def test_removes_upper_bounds_from_gem_dependency
+    with_ignored_dependencies({ 'nokogiri' => :upper }) do
+      deps = [gem_dependency('nokogiri', ['>= 1.0', '< 2.0'])]
 
-      it "removes upper bounds from Ruby dependency" do
-        deps = [ruby_dependency([">= 2.7", "< 3.3"])]
+      result = @resolver.filter_ignored_dependencies(deps)
 
-        result = resolver.filter_ignored_dependencies(deps)
-
-        expect(result.first.name).to eq("Ruby\0")
-        expect(result.first.requirement).to eq(Gem::Requirement.new(">= 2.7"))
-      end
+      assert_equal('nokogiri', result.first.name)
+      assert_equal(Gem::Requirement.new('>= 1.0'), result.first.requirement)
     end
+  end
 
-    context "when RubyGems is completely ignored" do
-      before { with_ignored_dependencies({ "RubyGems\0" => :complete }) }
+  def test_applies_all_ignore_rules_with_multiple_ignored_dependencies
+    with_ignored_dependencies({
+                                "Ruby\0" => :upper,
+                                "RubyGems\0" => :complete,
+                                'nokogiri' => :complete
+                              }) do
+      deps = [
+        ruby_dependency(['>= 2.7', '< 3.3']),
+        rubygems_dependency('>= 3.0'),
+        gem_dependency('nokogiri', '>= 1.0'),
+        gem_dependency('rails', '>= 7.0')
+      ]
 
-      it "removes RubyGems dependency entirely" do
-        deps = [
-          rubygems_dependency(">= 3.0"),
-          gem_dependency("rails", ">= 7.0")
-        ]
+      result = @resolver.filter_ignored_dependencies(deps)
 
-        result = resolver.filter_ignored_dependencies(deps)
+      # Ruby: upper bounds removed
+      ruby_dep = result.find { |d| d.name == "Ruby\0" }
+      assert_equal(Gem::Requirement.new('>= 2.7'), ruby_dep.requirement)
 
-        expect(result.map(&:name)).to eq(["rails"])
-      end
-    end
+      # RubyGems: completely removed
+      refute(result.any? { |d| d.name == "RubyGems\0" })
 
-    context "when gem is completely ignored" do
-      before { with_ignored_dependencies({ "nokogiri" => :complete }) }
+      # nokogiri: completely removed
+      refute(result.any? { |d| d.name == 'nokogiri' })
 
-      it "removes the gem dependency entirely" do
-        deps = [
-          gem_dependency("nokogiri", ">= 1.0"),
-          gem_dependency("rails", ">= 7.0")
-        ]
-
-        result = resolver.filter_ignored_dependencies(deps)
-
-        expect(result.map(&:name)).to eq(["rails"])
-      end
-    end
-
-    context "when gem upper bound is ignored" do
-      before { with_ignored_dependencies({ "nokogiri" => :upper }) }
-
-      it "removes upper bounds from gem dependency" do
-        deps = [gem_dependency("nokogiri", [">= 1.0", "< 2.0"])]
-
-        result = resolver.filter_ignored_dependencies(deps)
-
-        expect(result.first.name).to eq("nokogiri")
-        expect(result.first.requirement).to eq(Gem::Requirement.new(">= 1.0"))
-      end
-    end
-
-    context "with multiple ignored dependencies" do
-      before do
-        with_ignored_dependencies({
-          "Ruby\0" => :upper,
-          "RubyGems\0" => :complete,
-          "nokogiri" => :complete
-        })
-      end
-
-      it "applies all ignore rules" do
-        deps = [
-          ruby_dependency([">= 2.7", "< 3.3"]),
-          rubygems_dependency(">= 3.0"),
-          gem_dependency("nokogiri", ">= 1.0"),
-          gem_dependency("rails", ">= 7.0")
-        ]
-
-        result = resolver.filter_ignored_dependencies(deps)
-
-        # Ruby: upper bounds removed
-        ruby_dep = result.find { |d| d.name == "Ruby\0" }
-        expect(ruby_dep.requirement).to eq(Gem::Requirement.new(">= 2.7"))
-
-        # RubyGems: completely removed
-        expect(result.none? { |d| d.name == "RubyGems\0" }).to be true
-
-        # nokogiri: completely removed
-        expect(result.none? { |d| d.name == "nokogiri" }).to be true
-
-        # rails: unchanged
-        rails_dep = result.find { |d| d.name == "rails" }
-        expect(rails_dep.requirement).to eq(Gem::Requirement.new(">= 7.0"))
-      end
+      # rails: unchanged
+      rails_dep = result.find { |d| d.name == 'rails' }
+      assert_equal(Gem::Requirement.new('>= 7.0'), rails_dep.requirement)
     end
   end
 end

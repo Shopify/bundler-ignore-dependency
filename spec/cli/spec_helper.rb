@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+$LOAD_PATH.unshift File.expand_path('../../lib', __dir__)
+
+require_relative '../spec_helper'
 require 'bundler'
 require 'fileutils'
 require 'tmpdir'
@@ -9,6 +12,7 @@ require 'open3'
 module CLIHelpers
   # Result object for bundler commands
   Result = Struct.new(:stdout, :stderr, :success?, :exitstatus)
+
   # Path to the bundler-ignore-dependency plugin
   def plugin_path
     File.expand_path('../..', __dir__)
@@ -84,24 +88,4 @@ module CLIHelpers
 
     File.read(lockfile)
   end
-end
-
-RSpec.configure do |config|
-  config.include CLIHelpers
-
-  config.expect_with :rspec do |expectations|
-    expectations.include_chain_clauses_in_custom_matcher_descriptions = true
-  end
-
-  config.mock_with :rspec do |mocks|
-    mocks.verify_partial_doubles = true
-  end
-
-  config.disable_monkey_patching!
-  config.warnings = true
-
-  config.default_formatter = 'doc' if config.files_to_run.one?
-
-  config.order = :random
-  Kernel.srand config.seed
 end
