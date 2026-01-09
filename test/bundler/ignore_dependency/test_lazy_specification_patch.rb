@@ -26,49 +26,43 @@ class TestLazySpecificationPatch < Minitest::Test
     Gem::Dependency.new(name, requirement)
   end
 
-  def mock_lazy_spec(name, version, dependencies)
-    lazy_spec = Bundler::LazySpecification.new(name, Gem::Version.new(version), nil)
-    lazy_spec.dependencies = dependencies.dup
-    lazy_spec
-  end
-
-  def setup
-    @patch_class = Class.new do
-      extend Bundler::IgnoreDependency::LazySpecificationPatch
-
-      class << self
-        public :filter_ignored_dependencies
+  def gem_specification(name, version, dependencies)
+    Gem::Specification.new do |s|
+      s.name = name
+      s.version = version
+      dependencies.each do |dep|
+        s.add_runtime_dependency(dep.name, dep.requirement)
       end
     end
   end
 
-  def test_returns_lazy_spec_with_dependencies_unchanged_when_none_ignored
+  def test_from_spec_preserves_dependencies_when_none_ignored
     with_ignored_dependencies({}) do
       deps = [gem_dependency('activesupport'), gem_dependency('nokogiri')]
-      lazy_spec = mock_lazy_spec('rails', '7.0.0', deps)
+      spec = gem_specification('rails', '7.0.0', deps)
 
-      result = @patch_class.filter_ignored_dependencies(lazy_spec)
+      lazy_spec = Bundler::LazySpecification.from_spec(spec)
 
-      assert_equal(%w[activesupport nokogiri], result.dependencies.map(&:name))
+      assert_equal(%w[activesupport nokogiri], lazy_spec.dependencies.map(&:name))
     end
   end
 
-  def test_filters_out_ignored_gem_from_dependencies
+  def test_from_spec_filters_out_ignored_gem_from_dependencies
     with_ignored_dependencies({ 'activerecord' => :complete }) do
       deps = [
         gem_dependency('activesupport'),
         gem_dependency('activerecord'),
         gem_dependency('nokogiri')
       ]
-      lazy_spec = mock_lazy_spec('rails', '7.0.0', deps)
+      spec = gem_specification('rails', '7.0.0', deps)
 
-      result = @patch_class.filter_ignored_dependencies(lazy_spec)
+      lazy_spec = Bundler::LazySpecification.from_spec(spec)
 
-      assert_equal(%w[activesupport nokogiri], result.dependencies.map(&:name))
+      assert_equal(%w[activesupport nokogiri], lazy_spec.dependencies.map(&:name))
     end
   end
 
-  def test_filters_out_all_ignored_gems_from_dependencies
+  def test_from_spec_filters_out_all_ignored_gems_from_dependencies
     with_ignored_dependencies({
                                 'activerecord' => :complete,
                                 'nokogiri' => :complete
@@ -79,22 +73,22 @@ class TestLazySpecificationPatch < Minitest::Test
         gem_dependency('nokogiri'),
         gem_dependency('rack')
       ]
-      lazy_spec = mock_lazy_spec('rails', '7.0.0', deps)
+      spec = gem_specification('rails', '7.0.0', deps)
 
-      result = @patch_class.filter_ignored_dependencies(lazy_spec)
+      lazy_spec = Bundler::LazySpecification.from_spec(spec)
 
-      assert_equal(%w[activesupport rack], result.dependencies.map(&:name))
+      assert_equal(%w[activesupport rack], lazy_spec.dependencies.map(&:name))
     end
   end
 
-  def test_does_not_filter_out_gem_when_only_upper_bound_ignored
+  def test_from_spec_does_not_filter_out_gem_when_only_upper_bound_ignored
     with_ignored_dependencies({ 'nokogiri' => :upper }) do
       deps = [gem_dependency('activesupport'), gem_dependency('nokogiri')]
-      lazy_spec = mock_lazy_spec('rails', '7.0.0', deps)
+      spec = gem_specification('rails', '7.0.0', deps)
 
-      result = @patch_class.filter_ignored_dependencies(lazy_spec)
+      lazy_spec = Bundler::LazySpecification.from_spec(spec)
 
-      assert_equal(%w[activesupport nokogiri], result.dependencies.map(&:name))
+      assert_equal(%w[activesupport nokogiri], lazy_spec.dependencies.map(&:name))
     end
   end
 end
