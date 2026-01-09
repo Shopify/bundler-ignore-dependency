@@ -68,7 +68,14 @@ class TestDslPatch < Minitest::Test
 
   def test_to_definition_passes_ignored_dependencies_to_definition
     lockfile = Pathname.new(Dir.tmpdir).join('Gemfile.lock')
-    Bundler::SharedHelpers.stub(:pwd, Dir.tmpdir) do
+    original_method = begin
+      Bundler::SharedHelpers.method(:pwd)
+    rescue StandardError
+      nil
+    end
+
+    Bundler::SharedHelpers.define_singleton_method(:pwd) { Dir.tmpdir }
+    begin
       @dsl.source('https://rubygems.org')
       @dsl.ignore_dependency!(:ruby, type: :upper)
       @dsl.ignore_dependency!('nokogiri')
@@ -79,16 +86,35 @@ class TestDslPatch < Minitest::Test
                      "Ruby\0" => :upper,
                      'nokogiri' => :complete
                    }, definition.ignored_dependencies)
+    ensure
+      if original_method
+        Bundler::SharedHelpers.define_singleton_method(:pwd, &original_method)
+      elsif Bundler::SharedHelpers.respond_to?(:pwd)
+        Bundler::SharedHelpers.singleton_class.undef_method(:pwd)
+      end
     end
   end
 
   def test_to_definition_passes_empty_hash_when_no_dependencies_ignored
     lockfile = Pathname.new(Dir.tmpdir).join('Gemfile.lock')
-    Bundler::SharedHelpers.stub(:pwd, Dir.tmpdir) do
+    original_method = begin
+      Bundler::SharedHelpers.method(:pwd)
+    rescue StandardError
+      nil
+    end
+
+    Bundler::SharedHelpers.define_singleton_method(:pwd) { Dir.tmpdir }
+    begin
       @dsl.source('https://rubygems.org')
       definition = @dsl.to_definition(lockfile, {})
 
       assert_equal({}, definition.ignored_dependencies)
+    ensure
+      if original_method
+        Bundler::SharedHelpers.define_singleton_method(:pwd, &original_method)
+      elsif Bundler::SharedHelpers.respond_to?(:pwd)
+        Bundler::SharedHelpers.singleton_class.undef_method(:pwd)
+      end
     end
   end
 end

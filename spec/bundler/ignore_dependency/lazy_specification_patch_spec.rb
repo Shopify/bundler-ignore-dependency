@@ -4,12 +4,17 @@ require_relative '../../spec_helper'
 
 class TestLazySpecificationPatch < Minitest::Test
   def with_ignored_dependencies(deps)
+    original_definition = Bundler.instance_variable_get(:@definition)
+
     definition = Object.new
     definition.define_singleton_method(:ignored_dependencies) { deps }
 
-    Bundler.stub(:definition, definition) do
+    Bundler.instance_variable_set(:@definition, definition)
+    begin
       Bundler::IgnoreDependency.instance_variable_set(:@completely_ignored_gem_names, nil)
       yield
+    ensure
+      Bundler.instance_variable_set(:@definition, original_definition)
     end
   end
 

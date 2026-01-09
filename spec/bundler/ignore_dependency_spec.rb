@@ -149,6 +149,8 @@ class TestBundlerIgnoreDependency < Minitest::Test
   private
 
   def with_ignored_dependencies(deps)
+    original_definition = Bundler.instance_variable_get(:@definition)
+
     definition = if deps.nil?
                    nil
                  else
@@ -157,9 +159,12 @@ class TestBundlerIgnoreDependency < Minitest::Test
                    stub_definition
                  end
 
-    Bundler.stub(:definition, definition) do
+    Bundler.instance_variable_set(:@definition, definition)
+    begin
       Bundler::IgnoreDependency.instance_variable_set(:@completely_ignored_gem_names, nil)
       yield
+    ensure
+      Bundler.instance_variable_set(:@definition, original_definition)
     end
   end
 end

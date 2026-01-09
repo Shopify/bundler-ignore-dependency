@@ -11,12 +11,17 @@ class TestIgnoreDependencyIntegration < Minitest::Test
   end
 
   def with_ignored_dependencies(deps)
+    original_definition = Bundler.instance_variable_get(:@definition)
+
     definition = Object.new
     definition.define_singleton_method(:ignored_dependencies) { deps }
 
-    Bundler.stub(:definition, definition) do
+    Bundler.instance_variable_set(:@definition, definition)
+    begin
       Bundler::IgnoreDependency.instance_variable_set(:@completely_ignored_gem_names, nil)
       yield
+    ensure
+      Bundler.instance_variable_set(:@definition, original_definition)
     end
   end
 
@@ -57,9 +62,22 @@ class TestIgnoreDependencyIntegration < Minitest::Test
         ignore_dependency! :ruby, type: :upper
       GEMFILE
 
-      Bundler::SharedHelpers.stub(:pwd, dir) do
+      original_method = begin
+        Bundler::SharedHelpers.method(:pwd)
+      rescue StandardError
+        nil
+      end
+
+      Bundler::SharedHelpers.define_singleton_method(:pwd) { dir }
+      begin
         definition = Bundler::Definition.build(gemfile_path, lockfile_path, {})
         assert_equal({ "Ruby\0" => :upper }, definition.ignored_dependencies)
+      ensure
+        if original_method
+          Bundler::SharedHelpers.define_singleton_method(:pwd, &original_method)
+        elsif Bundler::SharedHelpers.respond_to?(:pwd)
+          Bundler::SharedHelpers.singleton_class.undef_method(:pwd)
+        end
       end
     end
   end
