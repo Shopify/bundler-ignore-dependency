@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../bundler_test'
+require_relative '../test_helper'
 
 class TestLazySpecificationPatch < BundlerTest
   def test_from_spec_preserves_dependencies_when_none_ignored

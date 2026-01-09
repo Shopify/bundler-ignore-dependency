@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../bundler_test'
+require_relative '../test_helper'
 
 class TestSharedHelpersPatch < BundlerTest
   def test_raises_error_when_new_deps_have_extra_dependencies
