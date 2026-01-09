@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../test_helper'
+require_relative './test_helper'
 
 class TestMatchMetadataPatch < BundlerTest
   def test_matches_current_ruby_returns_true_regardless_of_requirement_when_completely_ignored
