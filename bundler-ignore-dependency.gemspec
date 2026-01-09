@@ -14,5 +14,5 @@ Gem::Specification.new do |s|
   s.files       = Dir['lib/**/*', 'plugins.rb']
   s.require_paths = ['lib']
 
-  s.required_ruby_version = '>= 3.1.0'
+  s.required_ruby_version = '>= 3.1'
 end
