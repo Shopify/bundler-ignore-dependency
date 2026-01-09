@@ -5,8 +5,8 @@ require "rake/testtask"
 
 Rake::TestTask.new(:test) do |t|
   t.libs << "lib"
-  t.libs << "spec"
-  t.test_files = FileList["spec/**/*_spec.rb"]
+  t.libs << "test"
+  t.test_files = FileList["test/**/test_*.rb"]
 end
 
 task default: :test

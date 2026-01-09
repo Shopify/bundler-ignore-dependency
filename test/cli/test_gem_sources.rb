@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'spec_helper'
+require_relative 'test_helper'
 
 class TestIgnoreDependencyWithDifferentGemSources < Minitest::Test
   include CLIHelpers

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../spec_helper'
+require_relative '../test_helper'
 
 class TestBundlerIgnoreDependency < Minitest::Test
   def test_ignored_dependencies_returns_empty_hash_when_no_definition

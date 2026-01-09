@@ -2,7 +2,7 @@
 
 $LOAD_PATH.unshift File.expand_path('../../lib', __dir__)
 
-require_relative '../spec_helper'
+require_relative '../test_helper'
 require 'bundler'
 require 'fileutils'
 require 'tmpdir'
