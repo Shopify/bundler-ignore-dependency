@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative '../test_helper'
+require_relative '../bundler/bundler_test'
 
-class TestBundlerIgnoreDependency < Minitest::Test
+class TestBundlerIgnoreDependency < BundlerTest
   def test_ignored_dependencies_returns_empty_hash_when_no_definition
     with_ignored_dependencies(nil) do
       assert_equal({}, Bundler::IgnoreDependency.ignored_dependencies)
@@ -138,33 +138,6 @@ class TestBundlerIgnoreDependency < Minitest::Test
     with_ignored_dependencies({}) do
       result = Bundler::IgnoreDependency.apply_ignore_rule(requirement, :ruby)
       assert_equal(requirement, result)
-    end
-  end
-
-  def teardown
-    # Clean up cache after each test
-    Bundler::IgnoreDependency.instance_variable_set(:@completely_ignored_gem_names, nil)
-  end
-
-  private
-
-  def with_ignored_dependencies(deps)
-    original_definition = Bundler.instance_variable_get(:@definition)
-
-    definition = if deps.nil?
-                   nil
-                 else
-                   stub_definition = Object.new
-                   stub_definition.define_singleton_method(:ignored_dependencies) { deps }
-                   stub_definition
-                 end
-
-    Bundler.instance_variable_set(:@definition, definition)
-    begin
-      Bundler::IgnoreDependency.instance_variable_set(:@completely_ignored_gem_names, nil)
-      yield
-    ensure
-      Bundler.instance_variable_set(:@definition, original_definition)
     end
   end
 end

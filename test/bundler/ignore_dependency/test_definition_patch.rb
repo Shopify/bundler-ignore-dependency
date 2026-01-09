@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative '../../test_helper'
+require_relative '../../bundler/bundler_test'
 
-class TestDefinitionPatch < Minitest::Test
+class TestDefinitionPatch < BundlerTest
   def setup
     @definition = Bundler::Definition.new(nil, [], Bundler::SourceList.new, {})
   end

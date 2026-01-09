@@ -1,28 +1,8 @@
 # frozen_string_literal: true
 
-require_relative '../../test_helper'
+require_relative '../../bundler/bundler_test'
 
-class TestSharedHelpersPatch < Minitest::Test
-  def teardown
-    # Clean up cache after each test
-    Bundler::IgnoreDependency.instance_variable_set(:@completely_ignored_gem_names, nil)
-  end
-
-  def with_ignored_dependencies(deps)
-    original_definition = Bundler.instance_variable_get(:@definition)
-
-    definition = Object.new
-    definition.define_singleton_method(:ignored_dependencies) { deps }
-
-    Bundler.instance_variable_set(:@definition, definition)
-    begin
-      Bundler::IgnoreDependency.instance_variable_set(:@completely_ignored_gem_names, nil)
-      yield
-    ensure
-      Bundler.instance_variable_set(:@definition, original_definition)
-    end
-  end
-
+class TestSharedHelpersPatch < BundlerTest
   def gem_dependency(name, requirement = '>= 0')
     Gem::Dependency.new(name, requirement)
   end

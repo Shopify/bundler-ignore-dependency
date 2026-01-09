@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require_relative '../../test_helper'
+require_relative '../../bundler/bundler_test'
 require 'tmpdir'
 
-class TestDslPatch < Minitest::Test
+class TestDslPatch < BundlerTest
   def setup
     @dsl = Bundler::Dsl.new
   end
