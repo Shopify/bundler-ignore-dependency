@@ -1,9 +1,19 @@
 # frozen_string_literal: true
 
-require "bundler/dsl"
+require 'bundler/dsl'
 
 module Bundler
   module IgnoreDependency
+    # Adds ignore_dependency! method to Bundler::Dsl (Gemfile DSL)
+    #
+    # Purpose: Provides the user-facing API for specifying which dependencies
+    # should be ignored. Users call ignore_dependency! in their Gemfile to mark
+    # dependencies (Ruby, RubyGems, or gems) that should be filtered out of
+    # dependency resolution and version constraint checking.
+    #
+    # When ignore_dependency! is called, it normalizes the dependency names
+    # (e.g., :ruby -> "Ruby\0") and stores them in @ignored_dependencies.
+    # These settings are then transferred to the Definition object via to_definition().
     module DslPatch
       def initialize
         super
@@ -40,7 +50,7 @@ module Bundler
         when String
           name
         else
-          raise ArgumentError, "dependency name must be :ruby, :rubygems, or a gem name string"
+          raise ArgumentError, 'dependency name must be :ruby, :rubygems, or a gem name string'
         end
       end
     end

@@ -2,8 +2,18 @@
 
 module Bundler
   module IgnoreDependency
-    # Patch LazySpecification.from_spec to filter out ignored dependencies
-    # This ensures resolved specs don't have ignored gems in their dependencies
+    # Removes completely ignored gems from resolved gem specifications
+    #
+    # Purpose: After dependency resolution, LazySpecification objects are created
+    # from resolved specs. This patch intercepts that creation to remove completely
+    # ignored gems from the dependencies list.
+    #
+    # Critical for: Preventing ignored gems from appearing in the lockfile
+    # Without this patch, completely ignored gems would still appear in Gemfile.lock
+    # even though they're not actually being resolved.
+    #
+    # Flow: ResolverPatch filters during resolution → LazySpecificationPatch filters
+    # the resolved specs → MaterializationPatch prevents fetching
     module LazySpecificationPatch
       def from_spec(s)
         filter_ignored_dependencies(super)
