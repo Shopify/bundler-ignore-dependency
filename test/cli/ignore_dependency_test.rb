@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require_relative 'test_helper'
+require_relative "test_helper"
 
 class TestBundlerIgnoreDependencyPlugin < CliTest
   def test_plugin_installed_successfully_and_bundle_install_works
     with_tmp_dir do |dir|
-      create_test_gem(dir, name: 'simple_gem')
+      create_test_gem(dir, name: "simple_gem")
 
       write_gemfile(dir, <<~G)
         source "https://rubygems.org"
@@ -14,32 +14,34 @@ class TestBundlerIgnoreDependencyPlugin < CliTest
 
       result = run_bundle_install(dir)
 
-      assert(result.success?,
-             "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}")
-      assert(lockfile_includes_gem?(dir, 'simple_gem'))
+      assert(
+        result.success?,
+        "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}",
+      )
+      assert(lockfile_includes_gem?(dir, "simple_gem"))
     end
   end
 
   def test_plugin_available_for_subsequent_bundle_commands
     with_tmp_dir do |dir|
-      create_test_gem(dir, name: 'simple_gem')
+      create_test_gem(dir, name: "simple_gem")
 
       write_gemfile(dir, <<~G)
         source "https://rubygems.org"
         gem "simple_gem", path: "gems/simple_gem"
       G
 
-      result1 = run_bundle(dir, 'install')
+      result1 = run_bundle(dir, "install")
       assert(result1.success?)
 
-      result2 = run_bundle(dir, 'install')
+      result2 = run_bundle(dir, "install")
       assert(result2.success?)
     end
   end
 
   def test_allows_installation_of_gems_with_incompatible_ruby_version
     with_tmp_dir do |dir|
-      create_test_gem(dir, name: 'legacy_gem', required_ruby_version: '< 2.0')
+      create_test_gem(dir, name: "legacy_gem", required_ruby_version: "< 2.0")
 
       write_gemfile(dir, <<~G)
         source "https://rubygems.org"
@@ -49,17 +51,19 @@ class TestBundlerIgnoreDependencyPlugin < CliTest
 
       result = run_bundle_install(dir)
 
-      assert(result.success?,
-             "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}")
-      assert(lockfile_includes_gem?(dir, 'legacy_gem'))
+      assert(
+        result.success?,
+        "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}",
+      )
+      assert(lockfile_includes_gem?(dir, "legacy_gem"))
     end
   end
 
   def test_allows_installation_of_gems_with_upper_bound_ruby_version_constraints
-    skip('Test requires Ruby >= 3.0') if RUBY_VERSION < '3.0'
+    skip("Test requires Ruby >= 3.0") if RUBY_VERSION < "3.0"
 
     with_tmp_dir do |dir|
-      create_test_gem(dir, name: 'upper_bound_ruby_gem', required_ruby_version: ['>= 2.5', '< 3.0'])
+      create_test_gem(dir, name: "upper_bound_ruby_gem", required_ruby_version: [">= 2.5", "< 3.0"])
 
       write_gemfile(dir, <<~G)
         source "https://rubygems.org"
@@ -69,15 +73,17 @@ class TestBundlerIgnoreDependencyPlugin < CliTest
 
       result = run_bundle_install(dir)
 
-      assert(result.success?,
-             "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}")
-      assert(lockfile_includes_gem?(dir, 'upper_bound_ruby_gem'))
+      assert(
+        result.success?,
+        "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}",
+      )
+      assert(lockfile_includes_gem?(dir, "upper_bound_ruby_gem"))
     end
   end
 
   def test_still_enforces_lower_bound_when_only_upper_bound_ignored
     with_tmp_dir do |dir|
-      create_test_gem(dir, name: 'future_gem', required_ruby_version: ['>= 99.0', '< 100.0'])
+      create_test_gem(dir, name: "future_gem", required_ruby_version: [">= 99.0", "< 100.0"])
 
       write_gemfile(dir, <<~G)
         source "https://rubygems.org"
@@ -93,7 +99,7 @@ class TestBundlerIgnoreDependencyPlugin < CliTest
 
   def test_installs_gems_without_their_ignored_dependencies
     with_tmp_dir do |dir|
-      create_test_gem(dir, name: 'main_gem', dependencies: [{ name: 'json', version: '>= 2.0' }])
+      create_test_gem(dir, name: "main_gem", dependencies: [{ name: "json", version: ">= 2.0" }])
 
       write_gemfile(dir, <<~G)
         source "https://rubygems.org"
@@ -103,21 +109,23 @@ class TestBundlerIgnoreDependencyPlugin < CliTest
 
       result = run_bundle_install(dir)
 
-      assert(result.success?,
-             "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}")
+      assert(
+        result.success?,
+        "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}",
+      )
 
       lockfile = read_lockfile(dir)
-      assert_includes(lockfile, 'main_gem')
-      refute_includes(lockfile, 'json (')
+      assert_includes(lockfile, "main_gem")
+      refute_includes(lockfile, "json (")
     end
   end
 
   def test_can_ignore_multiple_gem_dependencies
     with_tmp_dir do |dir|
-      create_test_gem(dir, name: 'main_gem', dependencies: [
-                        { name: 'json', version: '>= 2.0' },
-                        { name: 'fileutils', version: '>= 1.0' }
-                      ])
+      create_test_gem(dir, name: "main_gem", dependencies: [
+        { name: "json", version: ">= 2.0" },
+        { name: "fileutils", version: ">= 1.0" },
+      ])
 
       write_gemfile(dir, <<~G)
         source "https://rubygems.org"
@@ -128,22 +136,24 @@ class TestBundlerIgnoreDependencyPlugin < CliTest
 
       result = run_bundle_install(dir)
 
-      assert(result.success?,
-             "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}")
+      assert(
+        result.success?,
+        "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}",
+      )
 
       lockfile = read_lockfile(dir)
-      assert_includes(lockfile, 'main_gem')
-      refute_includes(lockfile, 'json (')
-      refute_includes(lockfile, 'fileutils (')
+      assert_includes(lockfile, "main_gem")
+      refute_includes(lockfile, "json (")
+      refute_includes(lockfile, "fileutils (")
     end
   end
 
   def test_allows_resolving_gems_with_conflicting_upper_bound_constraints
     with_tmp_dir do |dir|
-      dep_v1_dir = File.join(dir, 'gems', 'shared_dep_v1')
-      FileUtils.mkdir_p(File.join(dep_v1_dir, 'lib'))
-      File.write(File.join(dep_v1_dir, 'lib', 'shared_dep.rb'), "module SharedDep; VERSION = '1.0.0'; end")
-      File.write(File.join(dep_v1_dir, 'shared_dep.gemspec'), <<~GEMSPEC)
+      dep_v1_dir = File.join(dir, "gems", "shared_dep_v1")
+      FileUtils.mkdir_p(File.join(dep_v1_dir, "lib"))
+      File.write(File.join(dep_v1_dir, "lib", "shared_dep.rb"), "module SharedDep; VERSION = '1.0.0'; end")
+      File.write(File.join(dep_v1_dir, "shared_dep.gemspec"), <<~GEMSPEC)
         Gem::Specification.new do |s|
           s.name = "shared_dep"
           s.version = "1.0.0"
@@ -153,10 +163,10 @@ class TestBundlerIgnoreDependencyPlugin < CliTest
         end
       GEMSPEC
 
-      dep_v2_dir = File.join(dir, 'gems', 'shared_dep_v2')
-      FileUtils.mkdir_p(File.join(dep_v2_dir, 'lib'))
-      File.write(File.join(dep_v2_dir, 'lib', 'shared_dep.rb'), "module SharedDep; VERSION = '2.0.0'; end")
-      File.write(File.join(dep_v2_dir, 'shared_dep.gemspec'), <<~GEMSPEC)
+      dep_v2_dir = File.join(dir, "gems", "shared_dep_v2")
+      FileUtils.mkdir_p(File.join(dep_v2_dir, "lib"))
+      File.write(File.join(dep_v2_dir, "lib", "shared_dep.rb"), "module SharedDep; VERSION = '2.0.0'; end")
+      File.write(File.join(dep_v2_dir, "shared_dep.gemspec"), <<~GEMSPEC)
         Gem::Specification.new do |s|
           s.name = "shared_dep"
           s.version = "2.0.0"
@@ -166,7 +176,7 @@ class TestBundlerIgnoreDependencyPlugin < CliTest
         end
       GEMSPEC
 
-      create_test_gem(dir, name: 'gem_a', dependencies: [{ name: 'shared_dep', version: '~> 1.0' }])
+      create_test_gem(dir, name: "gem_a", dependencies: [{ name: "shared_dep", version: "~> 1.0" }])
 
       write_gemfile(dir, <<~G)
         source "https://rubygems.org"
@@ -177,21 +187,25 @@ class TestBundlerIgnoreDependencyPlugin < CliTest
 
       result = run_bundle_install(dir)
 
-      assert(result.success?,
-             "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}")
+      assert(
+        result.success?,
+        "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}",
+      )
 
       lockfile = read_lockfile(dir)
-      assert_includes(lockfile, 'gem_a')
-      assert_includes(lockfile, 'shared_dep (2.0.0)')
+      assert_includes(lockfile, "gem_a")
+      assert_includes(lockfile, "shared_dep (2.0.0)")
     end
   end
 
   def test_can_ignore_both_ruby_and_gem_dependencies
     with_tmp_dir do |dir|
-      create_test_gem(dir,
-                      name: 'complex_gem',
-                      required_ruby_version: '< 2.0',
-                      dependencies: [{ name: 'json', version: '>= 1.0' }])
+      create_test_gem(
+        dir,
+        name: "complex_gem",
+        required_ruby_version: "< 2.0",
+        dependencies: [{ name: "json", version: ">= 1.0" }],
+      )
 
       write_gemfile(dir, <<~G)
         source "https://rubygems.org"
@@ -202,18 +216,20 @@ class TestBundlerIgnoreDependencyPlugin < CliTest
 
       result = run_bundle_install(dir)
 
-      assert(result.success?,
-             "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}")
+      assert(
+        result.success?,
+        "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}",
+      )
 
       lockfile = read_lockfile(dir)
-      assert_includes(lockfile, 'complex_gem')
-      refute_includes(lockfile, 'json (')
+      assert_includes(lockfile, "complex_gem")
+      refute_includes(lockfile, "json (")
     end
   end
 
   def test_raises_error_for_invalid_ignore_type
     with_tmp_dir do |dir|
-      create_test_gem(dir, name: 'simple_gem')
+      create_test_gem(dir, name: "simple_gem")
 
       write_gemfile(dir, <<~G)
         source "https://rubygems.org"
@@ -224,13 +240,13 @@ class TestBundlerIgnoreDependencyPlugin < CliTest
       result = run_bundle_install(dir)
 
       refute(result.success?)
-      assert_includes(result.stderr, 'type must be :complete or :upper')
+      assert_includes(result.stderr, "type must be :complete or :upper")
     end
   end
 
   def test_raises_error_for_invalid_dependency_name
     with_tmp_dir do |dir|
-      create_test_gem(dir, name: 'simple_gem')
+      create_test_gem(dir, name: "simple_gem")
 
       write_gemfile(dir, <<~G)
         source "https://rubygems.org"
@@ -241,14 +257,14 @@ class TestBundlerIgnoreDependencyPlugin < CliTest
       result = run_bundle_install(dir)
 
       refute(result.success?)
-      assert_includes(result.stderr, 'dependency name must be :ruby, :rubygems, or a gem name string')
+      assert_includes(result.stderr, "dependency name must be :ruby, :rubygems, or a gem name string")
     end
   end
 
   def test_generates_lockfile_with_ignored_dependencies_filtered_out
     with_tmp_dir do |dir|
-      create_test_gem(dir, name: 'dep_gem')
-      create_test_gem(dir, name: 'main_gem', dependencies: [{ name: 'dep_gem', version: '= 1.0.0' }])
+      create_test_gem(dir, name: "dep_gem")
+      create_test_gem(dir, name: "main_gem", dependencies: [{ name: "dep_gem", version: "= 1.0.0" }])
 
       write_gemfile(dir, <<~G)
         source "https://rubygems.org"
@@ -256,19 +272,21 @@ class TestBundlerIgnoreDependencyPlugin < CliTest
         gem "main_gem", path: "gems/main_gem"
       G
 
-      run_bundle(dir, 'install')
+      run_bundle(dir, "install")
 
-      lockfile_path = File.join(dir, 'Gemfile.lock')
+      lockfile_path = File.join(dir, "Gemfile.lock")
       File.delete(lockfile_path) if File.exist?(lockfile_path)
 
-      result = run_bundle(dir, 'lock')
+      result = run_bundle(dir, "lock")
 
-      assert(result.success?,
-             "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}")
+      assert(
+        result.success?,
+        "Expected success but got:\nSTDOUT: #{result.stdout}\nSTDERR: #{result.stderr}",
+      )
 
       lockfile = read_lockfile(dir)
-      assert_includes(lockfile, 'main_gem')
-      refute_includes(lockfile, 'dep_gem (')
+      assert_includes(lockfile, "main_gem")
+      refute_includes(lockfile, "dep_gem (")
     end
   end
 end

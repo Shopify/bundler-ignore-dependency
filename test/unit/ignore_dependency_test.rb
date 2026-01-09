@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative './test_helper'
+require_relative "test_helper"
 
 class TestBundlerIgnoreDependency < BundlerTest
   def test_ignored_dependencies_returns_empty_hash_when_no_definition
@@ -22,9 +22,9 @@ class TestBundlerIgnoreDependency < BundlerTest
   end
 
   def test_ignore_type_for_returns_the_ignore_type_for_ignored_dependency
-    with_ignored_dependencies({ ruby: :upper, 'nokogiri' => :complete }) do
+    with_ignored_dependencies({ ruby: :upper, "nokogiri" => :complete }) do
       assert_equal(:upper, Bundler::IgnoreDependency.ignore_type_for(:ruby))
-      assert_equal(:complete, Bundler::IgnoreDependency.ignore_type_for('nokogiri'))
+      assert_equal(:complete, Bundler::IgnoreDependency.ignore_type_for("nokogiri"))
     end
   end
 
@@ -76,49 +76,49 @@ class TestBundlerIgnoreDependency < BundlerTest
   end
 
   def test_remove_upper_bounds_keeps_lower_bound_with_greater_equal_operator
-    requirement = Gem::Requirement.new('>= 2.7')
+    requirement = Gem::Requirement.new(">= 2.7")
     filtered = Bundler::IgnoreDependency.remove_upper_bounds(requirement)
-    assert_equal(Gem::Requirement.new('>= 2.7'), filtered)
+    assert_equal(Gem::Requirement.new(">= 2.7"), filtered)
   end
 
   def test_remove_upper_bounds_keeps_lower_bound_with_greater_operator
-    requirement = Gem::Requirement.new('> 2.7')
+    requirement = Gem::Requirement.new("> 2.7")
     filtered = Bundler::IgnoreDependency.remove_upper_bounds(requirement)
-    assert_equal(Gem::Requirement.new('> 2.7'), filtered)
+    assert_equal(Gem::Requirement.new("> 2.7"), filtered)
   end
 
   def test_remove_upper_bounds_keeps_exact_version_with_equal_operator
-    requirement = Gem::Requirement.new('= 3.0')
+    requirement = Gem::Requirement.new("= 3.0")
     filtered = Bundler::IgnoreDependency.remove_upper_bounds(requirement)
-    assert_equal(Gem::Requirement.new('= 3.0'), filtered)
+    assert_equal(Gem::Requirement.new("= 3.0"), filtered)
   end
 
   def test_remove_upper_bounds_returns_default_requirement_with_less_operator
-    requirement = Gem::Requirement.new('< 4.0')
+    requirement = Gem::Requirement.new("< 4.0")
     filtered = Bundler::IgnoreDependency.remove_upper_bounds(requirement)
     assert_equal(Gem::Requirement.default, filtered)
   end
 
   def test_remove_upper_bounds_returns_default_requirement_with_less_equal_operator
-    requirement = Gem::Requirement.new('<= 3.2')
+    requirement = Gem::Requirement.new("<= 3.2")
     filtered = Bundler::IgnoreDependency.remove_upper_bounds(requirement)
     assert_equal(Gem::Requirement.default, filtered)
   end
 
   def test_remove_upper_bounds_removes_upper_bound_and_keeps_lower_bound_with_mixed_bounds
-    requirement = Gem::Requirement.new(['>= 2.7', '< 3.1'])
+    requirement = Gem::Requirement.new([">= 2.7", "< 3.1"])
     filtered = Bundler::IgnoreDependency.remove_upper_bounds(requirement)
-    assert_equal(Gem::Requirement.new('>= 2.7'), filtered)
+    assert_equal(Gem::Requirement.new(">= 2.7"), filtered)
   end
 
   def test_remove_upper_bounds_converts_pessimistic_operator_to_greater_equal_equivalent
-    requirement = Gem::Requirement.new('~> 2.7')
+    requirement = Gem::Requirement.new("~> 2.7")
     filtered = Bundler::IgnoreDependency.remove_upper_bounds(requirement)
-    assert_equal(Gem::Requirement.new('>= 2.7'), filtered)
+    assert_equal(Gem::Requirement.new(">= 2.7"), filtered)
   end
 
   def test_apply_ignore_rule_returns_default_requirement_when_completely_ignored
-    requirement = Gem::Requirement.new(['>= 2.7', '< 3.3'])
+    requirement = Gem::Requirement.new([">= 2.7", "< 3.3"])
     with_ignored_dependencies({ ruby: :complete }) do
       result = Bundler::IgnoreDependency.apply_ignore_rule(requirement, :ruby)
       assert_equal(Gem::Requirement.default, result)
@@ -126,15 +126,15 @@ class TestBundlerIgnoreDependency < BundlerTest
   end
 
   def test_apply_ignore_rule_removes_upper_bounds_when_upper_bound_ignored
-    requirement = Gem::Requirement.new(['>= 2.7', '< 3.3'])
+    requirement = Gem::Requirement.new([">= 2.7", "< 3.3"])
     with_ignored_dependencies({ ruby: :upper }) do
       result = Bundler::IgnoreDependency.apply_ignore_rule(requirement, :ruby)
-      assert_equal(Gem::Requirement.new('>= 2.7'), result)
+      assert_equal(Gem::Requirement.new(">= 2.7"), result)
     end
   end
 
   def test_apply_ignore_rule_returns_original_requirement_when_not_ignored
-    requirement = Gem::Requirement.new(['>= 2.7', '< 3.3'])
+    requirement = Gem::Requirement.new([">= 2.7", "< 3.3"])
     with_ignored_dependencies({}) do
       result = Bundler::IgnoreDependency.apply_ignore_rule(requirement, :ruby)
       assert_equal(requirement, result)

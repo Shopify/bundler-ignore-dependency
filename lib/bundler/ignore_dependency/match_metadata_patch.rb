@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'bundler/match_metadata'
+require "bundler/match_metadata"
 
 module Bundler
   module IgnoreDependency
@@ -32,10 +32,10 @@ module Bundler
         return true if IgnoreDependency.send("#{dependency_type}_completely_ignored?")
 
         requirement = if IgnoreDependency.send("#{dependency_type}_upper_bound_ignored?")
-                        IgnoreDependency.remove_upper_bounds(required_version)
-                      else
-                        required_version
-                      end
+          IgnoreDependency.remove_upper_bounds(required_version)
+        else
+          required_version
+        end
 
         requirement.satisfied_by?(current_version)
       end

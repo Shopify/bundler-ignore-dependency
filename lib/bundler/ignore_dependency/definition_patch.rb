@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'bundler/definition'
+require "bundler/definition"
 
 module Bundler
   module IgnoreDependency

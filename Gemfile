@@ -4,4 +4,6 @@ source "https://rubygems.org"
 
 gemspec name: "bundler-ignore-dependency"
 
-gem 'minitest', '>= 5.0'
+gem "minitest", ">= 5.0"
+gem "rubocop", require: false
+gem "rubocop-shopify", require: false

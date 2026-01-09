@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'bundler/resolver'
+require "bundler/resolver"
 
 module Bundler
   module IgnoreDependency

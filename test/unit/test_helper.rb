@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../test_helper'
+require_relative "../test_helper"
 
 class BundlerTest < Minitest::Test
   private
@@ -20,7 +20,7 @@ class BundlerTest < Minitest::Test
     end
   end
 
-  def gem_dependency(name, requirement = '>= 0')
+  def gem_dependency(name, requirement = ">= 0")
     Gem::Dependency.new(name, requirement)
   end
 
@@ -44,8 +44,8 @@ class BundlerTest < Minitest::Test
 
   def spec_with_requirements(ruby: nil, rubygems: nil)
     Gem::Specification.new do |s|
-      s.name = 'test_gem'
-      s.version = '1.0.0'
+      s.name = "test_gem"
+      s.version = "1.0.0"
       s.required_ruby_version = ruby if ruby
       s.required_rubygems_version = rubygems if rubygems
     end

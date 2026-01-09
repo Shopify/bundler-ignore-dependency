@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'bundler/dsl'
+require "bundler/dsl"
 
 module Bundler
   module IgnoreDependency
@@ -21,7 +21,7 @@ module Bundler
       end
 
       def ignore_dependency!(name, type: :complete)
-        unless %i[complete upper].include?(type)
+        unless [:complete, :upper].include?(type)
           raise ArgumentError, "type must be :complete or :upper, got #{type.inspect}"
         end
 
@@ -50,7 +50,7 @@ module Bundler
         when String
           name
         else
-          raise ArgumentError, 'dependency name must be :ruby, :rubygems, or a gem name string'
+          raise ArgumentError, "dependency name must be :ruby, :rubygems, or a gem name string"
         end
       end
     end

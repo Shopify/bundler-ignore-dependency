@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_relative 'ignore_dependency/version'
+require_relative "ignore_dependency/version"
 
 module Bundler
   module IgnoreDependency
-    LOWER_BOUND_OPERATORS = ['>=', '>', '='].freeze
+    LOWER_BOUND_OPERATORS = [">=", ">", "="].freeze
     RUBY_DEPENDENCY_NAME = "Ruby\0"
     RUBYGEMS_DEPENDENCY_NAME = "RubyGems\0"
 
@@ -54,10 +54,10 @@ module Bundler
         lower_bounds = requirement.requirements.filter_map do |op, version|
           if LOWER_BOUND_OPERATORS.include?(op)
             [op, version]
-          elsif op == '~>'
+          elsif op == "~>"
             # Pessimistic operator ~> X.Y means >= X.Y AND < X+1.0
             # We keep only the lower bound part
-            ['>=', version]
+            [">=", version]
           end
           # Skip < and <= operators (upper bounds)
         end
@@ -84,10 +84,10 @@ module Bundler
   end
 end
 
-require_relative 'ignore_dependency/match_metadata_patch'
-require_relative 'ignore_dependency/dsl_patch'
-require_relative 'ignore_dependency/definition_patch'
-require_relative 'ignore_dependency/resolver_patch'
-require_relative 'ignore_dependency/lazy_specification_patch'
-require_relative 'ignore_dependency/shared_helpers_patch'
-require_relative 'ignore_dependency/materialization_patch'
+require_relative "ignore_dependency/match_metadata_patch"
+require_relative "ignore_dependency/dsl_patch"
+require_relative "ignore_dependency/definition_patch"
+require_relative "ignore_dependency/resolver_patch"
+require_relative "ignore_dependency/lazy_specification_patch"
+require_relative "ignore_dependency/shared_helpers_patch"
+require_relative "ignore_dependency/materialization_patch"

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'bundler/materialization'
+require "bundler/materialization"
 
 module Bundler
   module IgnoreDependency

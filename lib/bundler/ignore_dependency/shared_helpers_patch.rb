@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'bundler/shared_helpers'
+require "bundler/shared_helpers"
 
 module Bundler
   module IgnoreDependency
