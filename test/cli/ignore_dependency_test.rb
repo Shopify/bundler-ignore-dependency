@@ -2,52 +2,7 @@
 
 require_relative 'test_helper'
 
-class TestBundlerIgnoreDependencyPlugin < Minitest::Test
-  include CLIHelpers
-
-  # Helper to create a simple gem directory
-  # required_ruby_version can be a single constraint string (e.g., "< 2.0") or an array (e.g., [">= 2.5", "< 3.0"])
-  def create_test_gem(dir, name:, version: '1.0.0', dependencies: [], required_ruby_version: nil,
-                      required_rubygems_version: nil)
-    gem_dir = File.join(dir, 'gems', name)
-    FileUtils.mkdir_p(File.join(gem_dir, 'lib'))
-
-    # Create lib file
-    File.write(File.join(gem_dir, 'lib', "#{name}.rb"),
-               "module #{name.split('_').map(&:capitalize).join}; VERSION = '#{version}'; end")
-
-    # Format ruby version requirement (can be string or array)
-    ruby_version_line = if required_ruby_version.is_a?(Array)
-                          "s.required_ruby_version = #{required_ruby_version.inspect}"
-                        elsif required_ruby_version
-                          "s.required_ruby_version = '#{required_ruby_version}'"
-                        else
-                          ''
-                        end
-
-    # Create gemspec
-    gemspec_content = <<~GEMSPEC
-      Gem::Specification.new do |s|
-        s.name        = "#{name}"
-        s.version     = "#{version}"
-        s.platform    = Gem::Platform::RUBY
-        s.summary     = "Test gem #{name}"
-        s.description = "A test gem for black box testing"
-        s.authors     = ["Test"]
-        s.email       = "test@example.com"
-        s.files       = ["lib/#{name}.rb"]
-        s.homepage    = "https://example.com"
-        s.license     = "MIT"
-        #{ruby_version_line}
-        #{required_rubygems_version ? "s.required_rubygems_version = '#{required_rubygems_version}'" : ''}
-        #{dependencies.map { |d| "s.add_dependency '#{d[:name]}', '#{d[:version] || '>= 0'}'" }.join("\n        ")}
-      end
-    GEMSPEC
-
-    File.write(File.join(gem_dir, "#{name}.gemspec"), gemspec_content)
-    gem_dir
-  end
-
+class TestBundlerIgnoreDependencyPlugin < CliTest
   def test_plugin_installed_successfully_and_bundle_install_works
     with_tmp_dir do |dir|
       create_test_gem(dir, name: 'simple_gem')

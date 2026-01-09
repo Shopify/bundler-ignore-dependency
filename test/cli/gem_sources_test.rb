@@ -2,54 +2,7 @@
 
 require_relative 'test_helper'
 
-class TestIgnoreDependencyWithDifferentGemSources < Minitest::Test
-  include CLIHelpers
-  # Helper to create a simple gem directory structure
-  def create_test_gem(dir, name:, version: '1.0.0', dependencies: [], subdir: 'gems')
-    gem_dir = File.join(dir, subdir, name)
-    FileUtils.mkdir_p(File.join(gem_dir, 'lib'))
-
-    # Create lib file
-    File.write(File.join(gem_dir, 'lib', "#{name}.rb"),
-               "module #{name.split('_').map(&:capitalize).join}; VERSION = '#{version}'; end")
-
-    # Create gemspec
-    gemspec_content = <<~GEMSPEC
-      Gem::Specification.new do |s|
-        s.name        = "#{name}"
-        s.version     = "#{version}"
-        s.platform    = Gem::Platform::RUBY
-        s.summary     = "Test gem #{name}"
-        s.description = "A test gem for testing"
-        s.authors     = ["Test"]
-        s.email       = "test@example.com"
-        s.files       = ["lib/#{name}.rb"]
-        s.homepage    = "https://example.com"
-        s.license     = "MIT"
-        #{dependencies.map { |d| "s.add_dependency '#{d[:name]}', '#{d[:version] || '>= 0'}'" }.join("\n    ")}
-      end
-    GEMSPEC
-
-    File.write(File.join(gem_dir, "#{name}.gemspec"), gemspec_content)
-    gem_dir
-  end
-
-  # Helper to create a git repo from a gem directory
-  def create_git_gem(dir, name:, version: '1.0.0', dependencies: [])
-    gem_dir = create_test_gem(dir, name: name, version: version, dependencies: dependencies, subdir: 'git_gems')
-
-    # Initialize git repo
-    Dir.chdir(gem_dir) do
-      system('git init -q', exception: true)
-      system('git config user.email "test@example.com"', exception: true)
-      system('git config user.name "Test"', exception: true)
-      system('git add -A', exception: true)
-      system('git commit -q -m "Initial commit"', exception: true)
-    end
-
-    gem_dir
-  end
-
+class TestIgnoreDependencyWithDifferentGemSources < CliTest
   def test_ignores_dependencies_from_path_gems
     with_tmp_dir do |dir|
       create_test_gem(dir, name: 'path_gem', dependencies: [{ name: 'json', version: '>= 2.0' }])

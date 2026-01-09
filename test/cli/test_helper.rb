@@ -6,8 +6,9 @@ require 'fileutils'
 require 'tmpdir'
 require 'open3'
 
-# Simple CLI test helpers that don't depend on bundler's internal test infrastructure
-module CLIHelpers
+class CliTest < Minitest::Test
+  private
+
   # Result object for bundler commands
   Result = Struct.new(:stdout, :stderr, :success?, :exitstatus)
 
@@ -85,5 +86,63 @@ module CLIHelpers
     return nil unless File.exist?(lockfile)
 
     File.read(lockfile)
+  end
+
+  # Helper to create a test gem directory structure
+  def create_test_gem(dir, name:, version: '1.0.0', dependencies: [], required_ruby_version: nil,
+                      required_rubygems_version: nil, subdir: 'gems')
+    gem_dir = File.join(dir, subdir, name)
+    FileUtils.mkdir_p(File.join(gem_dir, 'lib'))
+
+    # Create lib file
+    File.write(File.join(gem_dir, 'lib', "#{name}.rb"),
+               "module #{name.split('_').map(&:capitalize).join}; VERSION = '#{version}'; end")
+
+    # Format ruby version requirement (can be string or array)
+    ruby_version_line = if required_ruby_version.is_a?(Array)
+                          "s.required_ruby_version = #{required_ruby_version.inspect}"
+                        elsif required_ruby_version
+                          "s.required_ruby_version = '#{required_ruby_version}'"
+                        else
+                          ''
+                        end
+
+    # Create gemspec
+    gemspec_content = <<~GEMSPEC
+      Gem::Specification.new do |s|
+        s.name        = "#{name}"
+        s.version     = "#{version}"
+        s.platform    = Gem::Platform::RUBY
+        s.summary     = "Test gem #{name}"
+        s.description = "A test gem for testing"
+        s.authors     = ["Test"]
+        s.email       = "test@example.com"
+        s.files       = ["lib/#{name}.rb"]
+        s.homepage    = "https://example.com"
+        s.license     = "MIT"
+        #{ruby_version_line}
+        #{required_rubygems_version ? "s.required_rubygems_version = '#{required_rubygems_version}'" : ''}
+        #{dependencies.map { |d| "s.add_dependency '#{d[:name]}', '#{d[:version] || '>= 0'}'" }.join("\n        ")}
+      end
+    GEMSPEC
+
+    File.write(File.join(gem_dir, "#{name}.gemspec"), gemspec_content)
+    gem_dir
+  end
+
+  # Helper to create a git repo from a gem directory
+  def create_git_gem(dir, name:, version: '1.0.0', dependencies: [])
+    gem_dir = create_test_gem(dir, name: name, version: version, dependencies: dependencies, subdir: 'git_gems')
+
+    # Initialize git repo
+    Dir.chdir(gem_dir) do
+      system('git init -q', exception: true)
+      system('git config user.email "test@example.com"', exception: true)
+      system('git config user.name "Test"', exception: true)
+      system('git add -A', exception: true)
+      system('git commit -q -m "Initial commit"', exception: true)
+    end
+
+    gem_dir
   end
 end
