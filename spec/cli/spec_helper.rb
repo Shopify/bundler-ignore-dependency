@@ -4,10 +4,11 @@ require 'bundler'
 require 'fileutils'
 require 'tmpdir'
 require 'open3'
-require 'ostruct'
 
 # Simple CLI test helpers that don't depend on bundler's internal test infrastructure
 module CLIHelpers
+  # Result object for bundler commands
+  Result = Struct.new(:stdout, :stderr, :success?, :exitstatus)
   # Path to the bundler-ignore-dependency plugin
   def plugin_path
     File.expand_path('../..', __dir__)
@@ -48,11 +49,11 @@ module CLIHelpers
 
       stdout, stderr, status = Open3.capture3(full_env, *cmd, chdir: dir)
 
-      result = OpenStruct.new(
-        stdout: stdout,
-        stderr: stderr,
-        success?: status.success?,
-        exitstatus: status.exitstatus
+      result = Result.new(
+        stdout,
+        stderr,
+        status.success?,
+        status.exitstatus
       )
     end
     result
