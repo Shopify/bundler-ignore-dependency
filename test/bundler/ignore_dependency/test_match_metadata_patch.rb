@@ -3,15 +3,6 @@
 require_relative '../../bundler/bundler_test'
 
 class TestMatchMetadataPatch < BundlerTest
-  def spec_with_requirements(ruby: nil, rubygems: nil)
-    Gem::Specification.new do |s|
-      s.name = 'test_gem'
-      s.version = '1.0.0'
-      s.required_ruby_version = ruby if ruby
-      s.required_rubygems_version = rubygems if rubygems
-    end
-  end
-
   def test_matches_current_ruby_returns_true_regardless_of_requirement_when_completely_ignored
     with_ignored_dependencies({ "Ruby\0" => :complete }) do
       spec = spec_with_requirements(ruby: '>= 99.0.0')

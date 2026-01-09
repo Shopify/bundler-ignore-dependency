@@ -12,18 +12,6 @@ class TestResolverPatch < BundlerTest
     @resolver = @resolver_class.new
   end
 
-  def ruby_dependency(requirement)
-    Gem::Dependency.new("Ruby\0", requirement)
-  end
-
-  def rubygems_dependency(requirement)
-    Gem::Dependency.new("RubyGems\0", requirement)
-  end
-
-  def gem_dependency(name, requirement)
-    Gem::Dependency.new(name, requirement)
-  end
-
   def test_returns_dependencies_unchanged_when_none_ignored
     with_ignored_dependencies({}) do
       deps = [ruby_dependency('>= 2.7'), gem_dependency('rails', '>= 7.0')]

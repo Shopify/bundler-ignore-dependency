@@ -3,20 +3,6 @@
 require_relative '../../bundler/bundler_test'
 
 class TestLazySpecificationPatch < BundlerTest
-  def gem_dependency(name, requirement = '>= 0')
-    Gem::Dependency.new(name, requirement)
-  end
-
-  def gem_specification(name, version, dependencies)
-    Gem::Specification.new do |s|
-      s.name = name
-      s.version = version
-      dependencies.each do |dep|
-        s.add_runtime_dependency(dep.name, dep.requirement)
-      end
-    end
-  end
-
   def test_from_spec_preserves_dependencies_when_none_ignored
     with_ignored_dependencies({}) do
       deps = [gem_dependency('activesupport'), gem_dependency('nokogiri')]

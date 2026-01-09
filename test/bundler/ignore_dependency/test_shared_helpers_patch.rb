@@ -3,18 +3,6 @@
 require_relative '../../bundler/bundler_test'
 
 class TestSharedHelpersPatch < BundlerTest
-  def gem_dependency(name, requirement = '>= 0')
-    Gem::Dependency.new(name, requirement)
-  end
-
-  def mock_spec(name, version)
-    spec = Object.new
-    spec.define_singleton_method(:full_name) { "#{name}-#{version}" }
-    spec.define_singleton_method(:name) { name }
-    spec.define_singleton_method(:remote) { nil }
-    spec
-  end
-
   def test_raises_error_when_new_deps_have_extra_dependencies
     with_ignored_dependencies({}) do
       spec = mock_spec('rails', '7.0.0')
