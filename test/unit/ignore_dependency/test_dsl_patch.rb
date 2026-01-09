@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../../bundler/bundler_test'
+require_relative '../bundler_test'
 require 'tmpdir'
 
 class TestDslPatch < BundlerTest

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../bundler/bundler_test'
+require_relative './bundler_test'
 
 class TestBundlerIgnoreDependency < BundlerTest
   def test_ignored_dependencies_returns_empty_hash_when_no_definition
