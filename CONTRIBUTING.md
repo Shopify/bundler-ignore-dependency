@@ -37,8 +37,11 @@ bin/rake test
 ## Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (using Rake)
 bin/rake test
+
+# Run all tests (using minitest directly)
+bin/minitest test/**/*_test.rb
 
 # Run unit tests only
 bin/rake test TEST=test/unit/*_test.rb
@@ -48,6 +51,9 @@ bin/rake test TEST=test/cli/*_test.rb
 
 # Run a specific test file
 bin/rake test TEST=test/cli/ignore_dependency_test.rb
+
+# Run a specific test file (using minitest directly)
+bin/minitest test/cli/ignore_dependency_test.rb
 ```
 
 ## Code Style
