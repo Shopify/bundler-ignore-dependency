@@ -140,7 +140,7 @@ class CliTest < Minitest::Test
       system('git config user.email "test@example.com"', exception: true)
       system('git config user.name "Test"', exception: true)
       system('git add -A', exception: true)
-      system('git commit -q -m "Initial commit"', exception: true)
+      system('git commit -q --no-gpg-sign -m "Initial commit"', exception: true)
     end
 
     gem_dir
