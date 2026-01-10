@@ -30,8 +30,8 @@ jobs:
       - name: Install dependencies
         run: bundle install
 
-      - name: Run unit tests
-        run: bundle exec rspec spec/bundler --format documentation
+      - name: Lint with RuboCop
+        run: bin/rubocop
 
-      - name: Run CLI tests
-        run: bundle exec rspec spec/cli --format documentation
+      - name: Run tests
+        run: bin/minitest
