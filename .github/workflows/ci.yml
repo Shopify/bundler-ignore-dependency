@@ -15,8 +15,21 @@ jobs:
       - name: Fetch latest Bundler versions
         id: versions
         run: |
-          versions=$(ruby .github/scripts/bundler-versions.rb)
-          echo "bundler-versions=$versions" >> $GITHUB_OUTPUT
+          require "net/http"
+          require "json"
+          
+          response = Net::HTTP.get(URI("https://rubygems.org/info/bundler"))
+          versions = response.lines.map { |line| line.split(" ").first }.select { |v| v.match?(/^\d+\./) }
+          
+          latest_majors = versions.sort_by { |v| Gem::Version.new(v) }.reverse.map { |v| v.split(".").first }.uniq.take(2)
+          latest_versions = latest_majors.map do |major|
+            versions.select { |v| v.start_with?("#{major}.") }.max_by { |v| Gem::Version.new(v) }
+          end
+          
+          File.open(ENV["GITHUB_OUTPUT"], "a") do |f|
+            f.puts "bundler-versions=#{JSON.dump(latest_versions)}"
+          end
+        shell: ruby {0}
 
   test:
     runs-on: ubuntu-latest
