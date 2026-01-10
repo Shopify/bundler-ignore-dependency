@@ -17,14 +17,18 @@ jobs:
           - "3.3"
           - "3.4"
           - "4.0"
+        bundler-version:
+          - "2"
+          - "4"
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Ruby ${{ matrix.ruby-version }}
+      - name: Set up Ruby ${{ matrix.ruby-version }} with Bundler ${{ matrix.bundler-version }}
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby-version }}
+          bundler: ${{ matrix.bundler-version }}
           bundler-cache: true
 
       - name: Install dependencies
