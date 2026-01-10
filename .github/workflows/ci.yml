@@ -26,9 +26,7 @@ jobs:
             versions.select { |v| v.start_with?("#{major}.") }.max_by { |v| Gem::Version.new(v) }
           end
           
-          File.open(ENV["GITHUB_OUTPUT"], "a") do |f|
-            f.puts "bundler-versions=#{JSON.dump(latest_versions)}"
-          end
+          File.write(ENV["GITHUB_OUTPUT"], "bundler-versions=#{JSON.dump(latest_versions)}\n", mode: "a")
         shell: ruby {0}
 
   test:
