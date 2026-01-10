@@ -272,7 +272,7 @@ class TestBundlerIgnoreDependencyPlugin < CliTest
         gem "main_gem", path: "gems/main_gem"
       G
 
-      run_bundle(dir, "install")
+      run_bundle_install(dir)
 
       lockfile_path = File.join(dir, "Gemfile.lock")
       File.delete(lockfile_path) if File.exist?(lockfile_path)
