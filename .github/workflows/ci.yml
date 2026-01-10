@@ -15,13 +15,7 @@ jobs:
       - name: Fetch latest Bundler versions
         id: versions
         run: |
-          versions=$(curl -s https://rubygems.org/info/bundler | \
-            grep "^[0-9]" | sed 's/ .*//' | sort -V | \
-            awk -F. '!seen[$1]++ {print $1}' | tail -2 | \
-            while read major; do
-              curl -s https://rubygems.org/info/bundler | \
-                grep "^$major\." | sed 's/ .*//' | sort -V | tail -1
-            done | jq -R . | jq -s .)
+          versions=$(ruby .github/scripts/bundler-versions.rb)
           echo "bundler-versions=$versions" >> $GITHUB_OUTPUT
 
   test:
