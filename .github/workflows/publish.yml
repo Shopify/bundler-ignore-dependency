@@ -1,30 +1,51 @@
 name: Publish to RubyGems
-
 on:
   push:
     tags:
-      - "v*"
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
-  publish:
+  release_gem:
+    name: Release gem on RubyGems.org
+    if: github.repository == 'Shopify/bundler-ignore-dependency'
     runs-on: ubuntu-latest
+
     permissions:
-      contents: read
+      contents: write
       id-token: write
 
+    environment: release
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@b90be12699fdfcbee4440c2bba85f6f460446bb0 # v1.279.0
         with:
-          ruby-version: "3.4"
           bundler-cache: true
 
-      - name: Build gem
-        run: bundle exec gem build bundler-ignore-dependency.gemspec
+      - name: Release gem on RubyGems.org
+        uses: rubygems/release-gem@1c162a739e8b4cb21a676e97b087e8268d8fc40b # v1.1.2
 
-      - name: Publish to RubyGems
-        uses: rubygems/publish-gem@v1
-        with:
-          gem-file: bundler-ignore-dependency-*.gem
+  release_github:
+    name: Create GitHub release
+    if: github.repository == 'Shopify/bundler-ignore-dependency'
+    needs: release_gem
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Create GitHub release
+        run: |
+          tag_name="$(git describe --tags --abbrev=0)"
+          gh release create "${tag_name}" --verify-tag --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
