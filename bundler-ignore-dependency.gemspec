@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.summary     = "Bundler plugin to ignore dependency version constraints"
   s.description = "A Bundler plugin that adds an ignore_dependency! DSL method to allow ignoring version constraints on Ruby, RubyGems, or gem dependencies."
   s.authors     = ["Ufuk Kayserilioglu"]
-  s.homepage    = "https://github.com/paracycle/bundler-ignore-dependency"
+  s.homepage    = "https://github.com/Shopify/bundler-ignore-dependency"
   s.license     = "MIT"
 
   s.files       = Dir["lib/**/*", "plugins.rb"]

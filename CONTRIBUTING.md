@@ -25,7 +25,7 @@ We love receiving pull requests from everyone! Here are some ways you can contri
 
 ```bash
 # Clone your fork
-git clone https://github.com/paracycle/bundler-ignore-dependency.git
+git clone https://github.com/Shopify/bundler-ignore-dependency.git
 cd bundler-ignore-dependency
 
 # Install dependencies
