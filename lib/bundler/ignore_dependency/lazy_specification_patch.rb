@@ -23,13 +23,9 @@ module Bundler
 
       def filter_ignored_dependencies(lazy_spec)
         ignored_names = IgnoreDependency.completely_ignored_gem_names
+        return lazy_spec if ignored_names.empty?
 
-        if ignored_names.any?
-          lazy_spec.dependencies.reject! do |dep|
-            ignored_names.include?(dep.name)
-          end
-        end
-
+        lazy_spec.dependencies.reject! { |dep| ignored_names.include?(dep.name) }
         lazy_spec
       end
     end

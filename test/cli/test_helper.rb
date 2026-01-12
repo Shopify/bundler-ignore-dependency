@@ -101,12 +101,11 @@ class CliTest < Minitest::Test
     )
 
     # Format ruby version requirement (can be string or array)
-    ruby_version_line = if required_ruby_version.is_a?(Array)
+    ruby_version_line = case required_ruby_version
+    when Array
       "s.required_ruby_version = #{required_ruby_version.inspect}"
-    elsif required_ruby_version
+    when String
       "s.required_ruby_version = '#{required_ruby_version}'"
-    else
-      ""
     end
 
     # Create gemspec
